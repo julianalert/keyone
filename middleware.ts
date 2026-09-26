@@ -32,8 +32,8 @@ export async function middleware(request: NextRequest) {
     return supabaseResponse
   }
 
-  // Protect all dashboard routes
-  if (pathname.startsWith('/dashboard') && !user) {
+  // Protect all dashboard routes and the guided setup
+  if ((pathname.startsWith('/dashboard') || pathname.startsWith('/onboarding')) && !user) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 

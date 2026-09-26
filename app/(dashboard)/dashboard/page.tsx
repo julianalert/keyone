@@ -4,7 +4,6 @@ import { Card, CardContent } from '@/components/ui/Card'
 import { formatUSD, formatDate } from '@/lib/utils'
 import { getSessionContext, periodBounds } from '@/lib/agency'
 import { getMilestones } from '@/lib/onboarding'
-import { FirstRun } from '@/components/onboarding/FirstRun'
 import { Checklist } from '@/components/onboarding/Checklist'
 
 async function getOverviewData() {
@@ -77,10 +76,10 @@ export default async function DashboardPage({ searchParams }: { searchParams?: {
   const data = await getOverviewData()
   const isLowBalance = data.balance < 5
 
-  // Brand new agency: guided first run instead of an empty overview.
+  // Brand new agency: guided first run on its own screen, no dashboard chrome.
   // ?setup=1 reopens it for anyone (linked from the checklist).
   if (searchParams?.setup === '1' || (!data.milestones.has_client && !data.milestones.dismissed)) {
-    return <FirstRun agencyName={data.agencyName} />
+    redirect('/onboarding')
   }
 
   return (

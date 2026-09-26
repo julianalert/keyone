@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Card } from '@/components/ui/Card'
@@ -75,7 +74,7 @@ export function FirstRun({ agencyName }: { agencyName: string }) {
   const steps = ['Client', 'Project', 'Connect', 'First call']
 
   return (
-    <div className="p-8 max-w-3xl">
+    <div className="w-full max-w-2xl px-6 py-12">
       <div className="mb-8">
         <p className="section-label">Welcome</p>
         <h1 className="serif text-4xl font-normal">Let&apos;s make your first call</h1>
@@ -172,9 +171,7 @@ export function FirstRun({ agencyName }: { agencyName: string }) {
         )}
       </Card>
 
-      <p className="mt-4 text-xs text-ink-subtle">
-        <Link href="/dashboard/clients" className="hover:text-ink underline underline-offset-2">Skip, I&apos;ll explore</Link> · Wallet starts with $3 of credit.
-      </p>
+      <p className="mt-4 text-xs text-ink-subtle">Your wallet starts with $3 of credit, enough for thousands of small calls.</p>
     </div>
   )
 }

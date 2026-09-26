@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Card } from '@/components/ui/Card'
-import { ConnectSnippets } from './ConnectSnippets'
+import { ConnectSnippets, agentMessage, useOrigin } from './ConnectSnippets'
 import { formatUSD } from '@/lib/utils'
 
 type Step = 1 | 2 | 3 | 4
@@ -24,6 +24,7 @@ export function FirstRun({ agencyName }: { agencyName: string }) {
   const [projectId, setProjectId] = useState<string | null>(null)
   const [apiKey, setApiKey] = useState<string | null>(null)
   const [test, setTest] = useState<{ reply: string; cost: string; model: string } | null>(null)
+  const origin = useOrigin()
 
   async function post(path: string, body: unknown) {
     const res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
@@ -129,22 +130,39 @@ export function FirstRun({ agencyName }: { agencyName: string }) {
             <div>
               <h2 className="serif text-2xl font-normal">Your key for {projectName}</h2>
               <p className="text-sm text-ink-muted mt-2 leading-relaxed">
-                This one key replaces your OpenAI and Anthropic keys for this project. Wherever your code or your agent would use a provider key, use this one and point it at key.one.
-                Every call it makes is priced, checked against the budget, and logged under <span className="text-ink">{clientName} / {projectName}</span>.
+                This one key replaces your OpenAI and Anthropic keys for this project. Every call made with it is priced, checked against the budget, and logged under <span className="text-ink">{clientName} / {projectName}</span>.
               </p>
             </div>
-            <div className="bg-ink rounded-lg p-4">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-2xs text-ink-subtle uppercase tracking-widest">Project key</p>
-                <CopyKey value={apiKey} />
+
+            <div className="bg-ink rounded-lg p-5 flex flex-col gap-4">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-2xs text-ink-subtle uppercase tracking-widest">Project key</p>
+                  <CopyButton value={apiKey} label="Copy key" dark />
+                </div>
+                <code className="text-green-light text-sm break-all font-mono">{apiKey}</code>
+                <p className="text-xs text-red-300 mt-2">Shown once. If you lose it, rotate the key from the project page.</p>
               </div>
-              <code className="text-green-light text-sm break-all font-mono">{apiKey}</code>
-              <p className="text-xs text-red-300 mt-2">Shown once. If you lose it, rotate the key from the project page.</p>
+
+              <div style={{ borderTop: '0.5px solid #3a3a37' }} />
+
+              <div>
+                <p className="text-sm font-medium text-bg mb-1">Hand it to Claude Code or Cursor</p>
+                <p className="text-xs text-ink-subtle mb-3">Paste this message into your coding agent&apos;s chat. It installs key.one, swaps your provider keys for this one, and makes a test call. Nothing else to do.</p>
+                <pre className="text-xs text-bg/90 font-mono rounded-md p-3 whitespace-pre-wrap break-all" style={{ background: '#2a2a27' }}>{agentMessage(origin, apiKey, projectName)}</pre>
+                <div className="mt-3">
+                  <CopyButton value={agentMessage(origin, apiKey, projectName)} label="Copy message for Claude Code / Cursor" big />
+                </div>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-medium text-ink mb-2">How do you want to use it?</p>
-              <ConnectSnippets apiKey={apiKey} projectName={projectName} />
-            </div>
+
+            <details className="group">
+              <summary className="text-xs text-ink-muted hover:text-ink cursor-pointer select-none">Writing the code yourself? OpenAI SDK, Anthropic SDK, and curl snippets</summary>
+              <div className="mt-3">
+                <ConnectSnippets apiKey={apiKey} projectName={projectName} manualOnly />
+              </div>
+            </details>
+
             <div><Button onClick={() => setStep(4)}>Done, let&apos;s test it</Button></div>
           </div>
         )}
@@ -186,15 +204,23 @@ export function FirstRun({ agencyName }: { agencyName: string }) {
   )
 }
 
-function CopyKey({ value }: { value: string }) {
+function CopyButton({ value, label, dark = false, big = false }: { value: string; label: string; dark?: boolean; big?: boolean }) {
   const [copied, setCopied] = useState(false)
+  async function copy() {
+    await navigator.clipboard.writeText(value)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1500)
+  }
+  if (big) {
+    return (
+      <button type="button" onClick={copy} className="w-full px-4 py-2.5 rounded-md text-sm font-medium bg-green-mid text-ink hover:opacity-90 transition-opacity">
+        {copied ? '✓ Copied. Now paste it into your agent.' : label}
+      </button>
+    )
+  }
   return (
-    <button
-      type="button"
-      onClick={async () => { await navigator.clipboard.writeText(value); setCopied(true); setTimeout(() => setCopied(false), 1500) }}
-      className="text-xs text-ink-subtle hover:text-green-light"
-    >
-      {copied ? '✓ Copied' : 'Copy key'}
+    <button type="button" onClick={copy} className={`text-xs ${dark ? 'text-ink-subtle hover:text-green-light' : 'text-ink-muted hover:text-ink'}`}>
+      {copied ? '✓ Copied' : label}
     </button>
   )
 }

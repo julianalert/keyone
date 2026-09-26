@@ -4,21 +4,17 @@ import { useState, useEffect } from 'react'
 
 type Tab = 'agents' | 'openai' | 'anthropic' | 'curl'
 
-// Two ways to use a project key: hand it to a coding agent in one message,
-// or drop it into your own code. Agent first: it does the whole setup.
-export function ConnectSnippets({ apiKey, projectName, compact = false }: { apiKey: string; projectName?: string; compact?: boolean }) {
-  const [tab, setTab] = useState<Tab>('agents')
+// The public origin of this deployment, read after mount so server and client match.
+export function useOrigin(): string {
   const [origin, setOrigin] = useState('')
-  const [copied, setCopied] = useState(false)
   useEffect(() => { setOrigin(process.env.NEXT_PUBLIC_APP_URL?.replace(/\/+$/, '') || window.location.origin) }, [])
+  return origin
+}
 
+// The one message a user pastes into Claude Code or Cursor. The agent does the rest.
+export function agentMessage(origin: string, apiKey: string, projectName?: string): string {
   const label = projectName ? `"${projectName}"` : 'this project'
-
-  const snippets: Record<Tab, { tab: string; instruction: string; code: string }> = {
-    agents: {
-      tab: 'Claude Code / Cursor',
-      instruction: 'Copy this whole message and paste it into your coding agent’s chat. It installs key.one, swaps your provider keys for this one, and makes a test call.',
-      code: `Set up key.one for ${label} in this codebase.
+  return `Set up key.one for ${label} in this codebase.
 
 1. Install the key.one skill from ${origin}/skill.md and follow it.
 2. This is the project key. Use it for every OpenAI and Anthropic call instead of provider keys:
@@ -26,7 +22,21 @@ export function ConnectSnippets({ apiKey, projectName, compact = false }: { apiK
    OpenAI SDK:    base_url = ${origin}/api/proxy/openai/v1
    Anthropic SDK: base_url = ${origin}/api/proxy/anthropic
 3. Put the key and base URLs in this project's environment config, replace any direct OPENAI_API_KEY / ANTHROPIC_API_KEY usage, and keep the key out of git.
-4. Make one small test call with model "cheapest" and show me the reply and the X-Cost-USD header.`,
+4. Make one small test call with model "cheapest" and show me the reply and the X-Cost-USD header.`
+}
+
+// Snippets for using a project key. Agent first, unless `manualOnly` hides
+// that tab because the agent message is shown elsewhere.
+export function ConnectSnippets({ apiKey, projectName, compact = false, manualOnly = false }: { apiKey: string; projectName?: string; compact?: boolean; manualOnly?: boolean }) {
+  const [tab, setTab] = useState<Tab>(manualOnly ? 'openai' : 'agents')
+  const origin = useOrigin()
+  const [copied, setCopied] = useState(false)
+
+  const snippets: Record<Tab, { tab: string; instruction: string; code: string }> = {
+    agents: {
+      tab: 'Claude Code / Cursor',
+      instruction: 'Copy this whole message and paste it into your coding agent’s chat. It installs key.one, swaps your provider keys for this one, and makes a test call.',
+      code: agentMessage(origin, apiKey, projectName),
     },
     openai: {
       tab: 'OpenAI SDK',
@@ -67,6 +77,8 @@ reply = client.messages.create(
     },
   }
 
+  const tabs = (Object.keys(snippets) as Tab[]).filter(t => !(manualOnly && t === 'agents'))
+
   async function copy() {
     await navigator.clipboard.writeText(snippets[tab].code)
     setCopied(true)
@@ -76,7 +88,7 @@ reply = client.messages.create(
   return (
     <div>
       <div className="flex gap-1.5 flex-wrap mb-3">
-        {(Object.keys(snippets) as Tab[]).map(t => (
+        {tabs.map(t => (
           <button key={t} type="button" onClick={() => setTab(t)} className={`px-3 py-1.5 rounded text-xs transition-colors ${tab === t ? 'bg-ink text-bg' : 'text-ink-muted hover:text-ink border border-border'}`} style={{ borderWidth: '0.5px' }}>
             {snippets[t].tab}{t === 'agents' && tab !== t ? ' · recommended' : ''}
           </button>

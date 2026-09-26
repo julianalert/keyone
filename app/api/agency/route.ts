@@ -8,11 +8,13 @@ export async function GET(req: NextRequest) {
   const { supabase, agencyId } = ctx
 
   const [{ data: agency }, { data: wallet }] = await Promise.all([
-    supabase.from('agencies').select('id, name, created_at, alert_email, webhook_url, spike_multiplier, spike_floor_usd, auto_approve_increase_usd').eq('id', agencyId).single(),
+    supabase.from('agencies').select('id, name, created_at, alert_email, webhook_url, spike_multiplier, spike_floor_usd, auto_approve_increase_usd, owner:users!agencies_owner_user_id_fkey(email)').eq('id', agencyId).single(),
     supabase.from('wallets').select('balance_usd').eq('agency_id', agencyId).single(),
   ])
 
-  return NextResponse.json({ ...agency, wallet_balance_usd: Number(wallet?.balance_usd ?? 0), auth: ctx.via })
+  const { owner, ...rest } = (agency ?? {}) as Record<string, unknown> & { owner?: { email: string } | { email: string }[] | null }
+  const ownerEmail = Array.isArray(owner) ? owner[0]?.email : owner?.email
+  return NextResponse.json({ ...rest, owner_email: ownerEmail ?? null, wallet_balance_usd: Number(wallet?.balance_usd ?? 0), auth: ctx.via })
 }
 
 // PATCH /api/agency — name and control settings. Dashboard session only.

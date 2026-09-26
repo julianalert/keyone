@@ -20,6 +20,7 @@ interface AgencyKeyRow {
 export default function SettingsPage() {
   const router = useRouter()
   const [agencyName, setAgencyName] = useState('')
+  const [ownerEmail, setOwnerEmail] = useState('')
   const [savingName, setSavingName] = useState(false)
   const [ctl, setCtl] = useState({ alert_email: '', webhook_url: '', spike_multiplier: '10', spike_floor_usd: '10', auto_approve_increase_usd: '0' })
   const [savingCtl, setSavingCtl] = useState(false)
@@ -38,6 +39,7 @@ export default function SettingsPage() {
     const [a, k] = await Promise.all([fetch('/api/agency'), fetch('/api/agency/keys')])
     const agency = await a.json()
     setAgencyName(agency.name ?? '')
+    setOwnerEmail(agency.owner_email ?? '')
     setCtl({
       alert_email: agency.alert_email ?? '',
       webhook_url: agency.webhook_url ?? '',
@@ -107,13 +109,13 @@ export default function SettingsPage() {
 
       <Card className="mb-6">
         <div className="px-5 py-4" style={{ borderBottom: '0.5px solid #e0ddd7' }}>
-          <p className="text-sm font-medium text-ink">Agency name</p>
+          <p className="text-sm font-medium text-ink">Agency</p>
+          <p className="text-xs text-ink-muted">The name your clients and agents see, and the account that owns it.</p>
         </div>
-        <CardContent className="flex gap-3 items-end">
-          <div className="flex-1 max-w-sm">
-            <Input value={agencyName} onChange={e => setAgencyName(e.target.value)} />
-          </div>
-          <Button size="sm" loading={savingName} onClick={saveName}>Save</Button>
+        <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+          <Input id="agency-name" label="Agency name" value={agencyName} onChange={e => setAgencyName(e.target.value)} />
+          <Input id="owner-email" label="Owner" value={ownerEmail} readOnly className="text-ink-muted cursor-default" />
+          <Button size="md" loading={savingName} onClick={saveName}>Save</Button>
         </CardContent>
       </Card>
 
@@ -129,7 +131,7 @@ export default function SettingsPage() {
           <Input id="spike-floor" label="…and at least this much in the hour (USD)" type="number" min="0" step="1" value={ctl.spike_floor_usd} onChange={e => setCtl({ ...ctl, spike_floor_usd: e.target.value })} />
           <Input id="auto-approve" label="Auto-approve budget increases up to (USD, 0 = always ask)" type="number" min="0" step="1" value={ctl.auto_approve_increase_usd} onChange={e => setCtl({ ...ctl, auto_approve_increase_usd: e.target.value })} />
           <div className="flex items-end gap-3">
-            <Button size="sm" loading={savingCtl} onClick={saveControls}>Save controls</Button>
+            <Button size="md" loading={savingCtl} onClick={saveControls}>Save controls</Button>
             {ctlMsg && <span className="text-xs text-ink-muted pb-2">{ctlMsg}</span>}
           </div>
         </CardContent>

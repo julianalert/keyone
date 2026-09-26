@@ -22,7 +22,7 @@ async function getOverviewData() {
       .eq('agency_id', agencyId)
       .order('created_at', { ascending: false })
       .limit(6),
-    supabase.from('alerts').select('id, kind, scope, scope_id, title, created_at, read_at').eq('agency_id', agencyId).order('created_at', { ascending: false }).limit(6),
+    supabase.from('alerts').select('id, kind, scope, scope_id, title, data, created_at, read_at').eq('agency_id', agencyId).order('created_at', { ascending: false }).limit(6),
     supabase.from('budget_requests').select('id', { count: 'exact', head: true }).eq('agency_id', agencyId).eq('status', 'pending'),
   ])
 
@@ -105,11 +105,11 @@ export default async function DashboardPage() {
           </div>
           <div>
             {data.alerts.map((a, i, arr) => {
-              const href = a.scope === 'project' ? `/dashboard/projects/${a.scope_id}` : a.scope === 'client' ? `/dashboard/clients/${a.scope_id}` : '/dashboard/clients'
+              const href = alertHref(a)
               return (
                 <Link key={a.id} href={href} className="px-5 py-3 flex items-center justify-between gap-4 text-sm hover:bg-border/30 transition-colors" style={i < arr.length - 1 ? { borderBottom: '0.5px solid #e0ddd7' } : undefined}>
                   <div className="flex items-center gap-3 min-w-0">
-                    <span className="text-xs px-1.5 py-0.5 rounded font-mono shrink-0" style={{ background: a.kind === 'key_frozen' ? '#FEF2F2' : '#FEF3C7', color: a.kind === 'key_frozen' ? '#DC2626' : '#92400E' }}>
+                    <span className="text-xs px-1.5 py-0.5 rounded font-mono shrink-0" style={{ background: a.kind === 'key_frozen' ? '#FEF2F2' : a.kind === 'wallet_topup' ? '#EAF3DE' : '#FEF3C7', color: a.kind === 'key_frozen' ? '#DC2626' : a.kind === 'wallet_topup' ? '#3B6D11' : '#92400E' }}>
                       {a.kind.replace(/_/g, ' ')}
                     </span>
                     <span className={`truncate ${a.read_at ? 'text-ink-muted' : 'text-ink'}`}>{a.title}</span>
@@ -208,6 +208,21 @@ export default async function DashboardPage() {
       )}
     </div>
   )
+}
+
+// Where an alert should take you. Prefer the link the alert itself carries
+// (a relative path is enough), then fall back by kind or scope.
+function alertHref(a: { kind: string; scope: string; scope_id: string | null; data: Record<string, unknown> | null }): string {
+  const links = (a.data?.links ?? null) as Record<string, string> | null
+  const first = links ? Object.values(links)[0] : null
+  if (first) {
+    try { return new URL(first).pathname } catch { return first }
+  }
+  if (a.kind === 'wallet_topup' || a.kind === 'low_balance') return '/dashboard/wallet'
+  if (a.kind === 'controller_digest') return '/dashboard/controller'
+  if (a.scope === 'project' && a.scope_id) return `/dashboard/projects/${a.scope_id}`
+  if (a.scope === 'client' && a.scope_id) return `/dashboard/clients/${a.scope_id}`
+  return '/dashboard'
 }
 
 function StatusPill({ status }: { status: number | null }) {

@@ -31,12 +31,12 @@ const navItems = [
     ),
   },
   {
-    href: '/dashboard/controller',
-    label: 'Controller',
+    href: '/dashboard/catalog',
+    label: 'Catalog',
     icon: (
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.25"/>
-        <path d="M8 5v3l2 1.5" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+        <rect x="1" y="1" width="14" height="10" rx="2" stroke="currentColor" strokeWidth="1.25"/>
+        <path d="M4 15h8M8 11v4" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round"/>
       </svg>
     ),
   },
@@ -53,12 +53,12 @@ const navItems = [
     ),
   },
   {
-    href: '/dashboard/catalog',
-    label: 'Catalog',
+    href: '/dashboard/controller',
+    label: 'Controller',
     icon: (
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="1" y="1" width="14" height="10" rx="2" stroke="currentColor" strokeWidth="1.25"/>
-        <path d="M4 15h8M8 11v4" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round"/>
+        <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.25"/>
+        <path d="M8 5v3l2 1.5" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
       </svg>
     ),
   },

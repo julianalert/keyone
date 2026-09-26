@@ -17,7 +17,7 @@ import { startApifyRun } from '@/lib/proxy/async'
 import { evaluatePolicy, blockedResponse } from '@/lib/proxy/policy'
 import { runPostCallControls } from '@/lib/proxy/controls'
 import { createServiceClient } from '@/lib/supabase/server'
-import { inngest } from '@/lib/inngest/client'
+import { raiseAlert } from '@/lib/notify'
 import type { ResolvedKey } from '@/lib/proxy/auth'
 import type { CatalogApi } from '@/lib/supabase/types'
 import type { SupabaseClient } from '@supabase/supabase-js'
@@ -311,10 +311,16 @@ async function settleCall(
         p_api_call_id: callId,
       })
       const newBalance = s.balance - s.cost
-      if (newBalance < 5) {
-        await inngest.send({
-          name: 'wallet/low-balance',
-          data: { agency_id: caller.agency_id, balance: newBalance, threshold: 5 },
+      if (newBalance < 5 && after) {
+        await raiseAlert(supabase, {
+          agency_id: caller.agency_id,
+          kind: 'low_balance',
+          scope: 'agency',
+          scope_id: caller.agency_id,
+          dedupe_key: `low_balance:${new Date().toISOString().slice(0, 10)}`,   // once a day
+          title: `Wallet is running low: $${newBalance.toFixed(2)} left`,
+          body: 'Every project key stops working when the balance reaches $0. Top up to keep agents running.',
+          data: { balance_usd: newBalance, links: { 'Add funds': `${appUrl(after.origin)}/dashboard/wallet` } },
         })
       }
       if (after) await runPostCallControls(supabase, caller, after.origin, after.before, s.cost)

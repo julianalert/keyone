@@ -38,18 +38,22 @@ Run the migrations in order in your Supabase project's SQL Editor:
 008_reports                   → SQL aggregates for date-ranged reports
 009_controller                → controller runs and findings, allowed models per project
 010_welcome_credit            → $3 wallet credit on signup
+011_stripe_idempotency        → one credit per payment intent
 ```
 
 Migration 003 drops the agent-scoped tables and recreates them. On signup a trigger creates the user's agency, membership, and wallet, credited with $3 (migration 010).
 
-### 3. Stripe webhook
+### 3. Stripe
 
-Point your Stripe webhook at:
+Wallet top-ups use a Payment Intent and Stripe's Payment Element (cards, wallets, bank redirects, whatever the account enables). Minimum $5, maximum $5,000.
+
+Create a webhook endpoint in Stripe → Developers → Webhooks pointing at:
 ```
 https://your-domain.com/api/webhooks/stripe
 ```
+with events `payment_intent.succeeded` and `payment_intent.payment_failed`, and put its signing secret in `STRIPE_WEBHOOK_SECRET`.
 
-Enable the `payment_intent.succeeded` event.
+Credits are idempotent: the wallet page confirms the payment server-side the moment the card clears, and the webhook confirms it again; the same payment intent can only credit once (migration 011). A receipt goes out through the alerts path (email + webhook). Locally, run `stripe listen --forward-to localhost:3001/api/webhooks/stripe` and use the printed `whsec_` secret.
 
 ### 4. Inngest
 

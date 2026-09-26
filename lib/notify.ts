@@ -4,7 +4,7 @@ import { fromEmail } from '@/lib/config'
 
 export interface AlertInput {
   agency_id: string
-  kind: 'budget_threshold' | 'key_frozen' | 'budget_request' | 'budget_decided' | 'controller_digest'
+  kind: 'budget_threshold' | 'key_frozen' | 'budget_request' | 'budget_decided' | 'controller_digest' | 'wallet_topup' | 'low_balance'
   scope: 'project' | 'client' | 'key' | 'request' | 'agency'
   scope_id: string
   dedupe_key?: string

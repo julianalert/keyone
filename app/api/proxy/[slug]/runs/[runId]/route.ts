@@ -6,7 +6,8 @@ import {
   isTerminalStatus,
 } from '@/lib/proxy/async'
 import { createServiceClient } from '@/lib/supabase/server'
-import { inngest } from '@/lib/inngest/client'
+import { raiseAlert } from '@/lib/notify'
+import { appUrl } from '@/lib/config'
 
 export const runtime = 'nodejs'
 
@@ -160,9 +161,15 @@ export async function GET(
       // Budget alert if balance drops below threshold
       const balance = await getWalletBalance(caller.agency_id)
       if (balance < 5) {
-        await inngest.send({
-          name: 'wallet/low-balance',
-          data: { agency_id: caller.agency_id, balance, threshold: 5 },
+        await raiseAlert(supabase, {
+          agency_id: caller.agency_id,
+          kind: 'low_balance',
+          scope: 'agency',
+          scope_id: caller.agency_id,
+          dedupe_key: `low_balance:${new Date().toISOString().slice(0, 10)}`,
+          title: `Wallet is running low: $${balance.toFixed(2)} left`,
+          body: 'Every project key stops working when the balance reaches $0. Top up to keep agents running.',
+          data: { balance_usd: balance, links: { 'Add funds': `${appUrl(new URL(req.url).origin)}/dashboard/wallet` } },
         })
       }
     }

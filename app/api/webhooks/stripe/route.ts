@@ -1,55 +1,55 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { stripe } from '@/lib/billing/stripe'
+import type Stripe from 'stripe'
+import { getStripe, stripeConfigured } from '@/lib/billing/stripe'
 import { createServiceClient } from '@/lib/supabase/server'
-import { inngest } from '@/lib/inngest/client'
+import { creditPaymentIntent } from '@/lib/billing/credit'
+import { appUrl } from '@/lib/config'
 
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
-// POST /api/webhooks/stripe — handle Stripe events
+// POST /api/webhooks/stripe
+// Configure in Stripe → Developers → Webhooks with events:
+//   payment_intent.succeeded, payment_intent.payment_failed
 export async function POST(req: NextRequest) {
-  const body = await req.text()
-  const signature = req.headers.get('stripe-signature')
-
-  if (!signature) {
-    return NextResponse.json({ error: 'Missing stripe-signature' }, { status: 400 })
+  if (!stripeConfigured() || !process.env.STRIPE_WEBHOOK_SECRET) {
+    return NextResponse.json({ error: 'Stripe webhook not configured' }, { status: 503 })
   }
+  const signature = req.headers.get('stripe-signature')
+  if (!signature) return NextResponse.json({ error: 'Missing stripe-signature' }, { status: 400 })
 
-  let event
+  const raw = await req.text()
+  let event: Stripe.Event
   try {
-    event = stripe.webhooks.constructEvent(
-      body,
-      signature,
-      process.env.STRIPE_WEBHOOK_SECRET!
-    )
+    event = getStripe().webhooks.constructEvent(raw, signature, process.env.STRIPE_WEBHOOK_SECRET)
   } catch (err) {
     console.error('Stripe webhook signature verification failed:', err)
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
   }
 
-  if (event.type === 'payment_intent.succeeded') {
-    const intent = event.data.object
-    const agencyId = intent.metadata?.agency_id
-    const amountUsd = intent.amount / 100 // cents to dollars
+  const supabase = createServiceClient()
 
-    if (!agencyId) {
-      console.error('No agency_id in payment_intent metadata')
-      return NextResponse.json({ error: 'Missing agency_id' }, { status: 400 })
+  switch (event.type) {
+    case 'payment_intent.succeeded': {
+      const intent = event.data.object as Stripe.PaymentIntent
+      if (intent.metadata?.type !== 'wallet_topup') break   // not ours
+      try {
+        const r = await creditPaymentIntent(supabase, intent, appUrl(new URL(req.url).origin))
+        console.log(`[stripe] ${intent.id}: ${r.credited ? `credited $${r.amount_usd}` : 'already credited'} → balance $${r.balance_usd}`)
+      } catch (err) {
+        console.error('[stripe] credit failed:', err)
+        // 500 makes Stripe retry, which is what we want for a transient DB error
+        return NextResponse.json({ error: 'credit failed' }, { status: 500 })
+      }
+      break
     }
-
-    const supabase = createServiceClient()
-
-    // Credit the wallet
-    await supabase.rpc('topup_wallet', {
-      p_agency_id: agencyId,
-      p_amount: amountUsd,
-      p_stripe_payment_intent_id: intent.id,
-    }).throwOnError()
-
-    // Send confirmation email via Inngest
-    await inngest.send({
-      name: 'wallet/topped-up',
-      data: { agency_id: agencyId, amount_usd: amountUsd, payment_intent_id: intent.id },
-    })
+    case 'payment_intent.payment_failed': {
+      const intent = event.data.object as Stripe.PaymentIntent
+      console.warn(`[stripe] payment failed ${intent.id}: ${intent.last_payment_error?.message ?? 'unknown'}`)
+      break
+    }
+    default:
+      break
   }
 
   return NextResponse.json({ received: true })

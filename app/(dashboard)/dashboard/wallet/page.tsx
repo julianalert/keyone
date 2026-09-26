@@ -14,7 +14,8 @@ import { formatUSD, formatDate } from '@/lib/utils'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 
-const TOP_UP_AMOUNTS = [10, 25, 50, 100]
+const TOP_UP_AMOUNTS = [10, 25, 50, 100, 250]
+const TOP_UP_MIN = 5
 
 interface WalletData {
   balance_usd: number
@@ -35,6 +36,10 @@ export default function WalletPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [showTopUp, setShowTopUp] = useState(false)
   const [clientSecret, setClientSecret] = useState<string | null>(null)
+  const [intentId, setIntentId] = useState<string | null>(null)
+  const [testMode, setTestMode] = useState(false)
+  const [topupError, setTopupError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
   const [selectedAmount, setSelectedAmount] = useState<number>(25)
   const [customAmount, setCustomAmount] = useState('')
   const [loadingIntent, setLoadingIntent] = useState(false)
@@ -59,17 +64,41 @@ export default function WalletPage() {
 
   async function handleTopUpStart() {
     const amount = customAmount ? Number(customAmount) : selectedAmount
-    if (!amount || amount < 1) return
+    if (!amount || amount < TOP_UP_MIN) return
 
     setLoadingIntent(true)
+    setTopupError(null)
     const res = await fetch('/api/wallet/topup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ amount_usd: amount }),
     })
     const data = await res.json()
-    setClientSecret(data.client_secret)
     setLoadingIntent(false)
+    if (!res.ok) { setTopupError(data.error ?? 'Could not start payment'); return }
+    setClientSecret(data.client_secret)
+    setIntentId(data.payment_intent_id)
+    setTestMode(!!data.test_mode)
+  }
+
+  // After the card is confirmed, have the server verify with Stripe and
+  // credit the wallet, so the balance updates without waiting for the webhook.
+  async function handlePaid() {
+    setShowTopUp(false)
+    setClientSecret(null)
+    if (intentId) {
+      const res = await fetch('/api/wallet/topup/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ payment_intent_id: intentId }),
+      })
+      const d = await res.json()
+      setNotice(res.ok && d.status === 'succeeded' ? `$${Number(d.amount_usd).toFixed(2)} added. Balance is now $${Number(d.balance_usd).toFixed(2)}.` : 'Payment received. Your balance will update in a moment.')
+    }
+    setIntentId(null)
+    fetchWallet()
+    fetchTransactions()
+    setTimeout(() => { fetchWallet(); fetchTransactions() }, 4000)
   }
 
   const effectiveAmount = customAmount ? Number(customAmount) : selectedAmount
@@ -81,6 +110,13 @@ export default function WalletPage() {
       <div className="mb-8">
         <h1 className="serif text-4xl font-normal">Wallet</h1>
       </div>
+
+      {notice && (
+        <div className="mb-4 px-4 py-3 rounded-lg bg-green-pale text-sm text-green-dark flex items-center justify-between" style={{ border: '0.5px solid #C0DD97' }}>
+          <span>{notice}</span>
+          <button onClick={() => setNotice(null)} className="text-green-dark/60 hover:text-green-dark">×</button>
+        </div>
+      )}
 
       {/* Balance card */}
       <Card className="mb-6 p-6">
@@ -135,12 +171,12 @@ export default function WalletPage() {
                     ))}
                   </div>
                   <div className="mt-3">
-                    <p className="text-xs text-ink-muted mb-1.5">Custom amount</p>
+                    <p className="text-xs text-ink-muted mb-1.5">Custom amount (min ${TOP_UP_MIN})</p>
                     <input
                       type="number"
                       placeholder="Enter amount"
-                      min="1"
-                      max="1000"
+                      min={TOP_UP_MIN}
+                      max="5000"
                       value={customAmount}
                       onChange={e => setCustomAmount(e.target.value)}
                       className="w-full px-3 py-2.5 bg-bg border rounded text-sm text-ink placeholder:text-ink-subtle outline-none focus:border-ink-muted"
@@ -148,6 +184,7 @@ export default function WalletPage() {
                     />
                   </div>
                 </div>
+                {topupError && <p className="text-xs text-red-500 mb-3">{topupError}</p>}
                 <div className="flex gap-3">
                   <Button variant="secondary" onClick={() => setShowTopUp(false)} className="flex-1">
                     Cancel
@@ -155,7 +192,7 @@ export default function WalletPage() {
                   <Button
                     onClick={handleTopUpStart}
                     loading={loadingIntent}
-                    disabled={!effectiveAmount || effectiveAmount < 1}
+                    disabled={!effectiveAmount || effectiveAmount < TOP_UP_MIN}
                     className="flex-1"
                   >
                     Pay ${effectiveAmount || '—'}
@@ -181,13 +218,9 @@ export default function WalletPage() {
               >
                 <CheckoutForm
                   amount={effectiveAmount}
-                  onSuccess={() => {
-                    setShowTopUp(false)
-                    setClientSecret(null)
-                    setTimeout(fetchWallet, 2000)
-                    setTimeout(fetchTransactions, 2000)
-                  }}
-                  onCancel={() => { setShowTopUp(false); setClientSecret(null) }}
+                  testMode={testMode}
+                  onSuccess={handlePaid}
+                  onCancel={() => { setShowTopUp(false); setClientSecret(null); setIntentId(null) }}
                 />
               </Elements>
             )}
@@ -282,10 +315,12 @@ export default function WalletPage() {
 
 function CheckoutForm({
   amount,
+  testMode,
   onSuccess,
   onCancel,
 }: {
   amount: number
+  testMode: boolean
   onSuccess: () => void
   onCancel: () => void
 }) {
@@ -317,8 +352,9 @@ function CheckoutForm({
 
   return (
     <form onSubmit={handlePay} className="flex flex-col gap-4">
-      <div className="bg-green-pale px-4 py-3 rounded-lg text-sm text-green-dark font-medium">
-        Adding ${amount.toFixed(2)} to your wallet
+      <div className="bg-green-pale px-4 py-3 rounded-lg text-sm text-green-dark font-medium flex items-center justify-between">
+        <span>Adding ${amount.toFixed(2)} to your wallet</span>
+        {testMode && <span className="text-2xs uppercase tracking-wider px-2 py-0.5 rounded bg-amber-50 text-amber-700">Test mode</span>}
       </div>
       <PaymentElement />
       {error && <p className="text-xs text-red-500">{error}</p>}

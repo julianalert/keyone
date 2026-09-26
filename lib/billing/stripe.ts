@@ -2,24 +2,23 @@ import Stripe from 'stripe'
 
 let _stripe: Stripe | null = null
 
+export function stripeConfigured(): boolean {
+  const k = process.env.STRIPE_SECRET_KEY ?? ''
+  return (k.startsWith('sk_test_') || k.startsWith('sk_live_')) && !k.endsWith('...')
+}
+
+export function isTestMode(): boolean {
+  return (process.env.STRIPE_SECRET_KEY ?? '').startsWith('sk_test_')
+}
+
 export function getStripe(): Stripe {
   if (!_stripe) {
-    if (!process.env.STRIPE_SECRET_KEY) {
-      throw new Error('Missing STRIPE_SECRET_KEY')
-    }
-    _stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-      apiVersion: '2026-04-22.dahlia',
-      typescript: true,
-    })
+    if (!stripeConfigured()) throw new Error('Stripe is not configured (STRIPE_SECRET_KEY)')
+    _stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { typescript: true })
   }
   return _stripe
 }
 
-// Re-export for convenience in webhook handler (needs raw Stripe instance)
-export const stripe = {
-  get webhooks() { return getStripe().webhooks },
-  get customers() { return getStripe().customers },
-  get paymentIntents() { return getStripe().paymentIntents },
-}
-
-export const TOP_UP_AMOUNTS = [10, 25, 50, 100] // USD
+export const TOP_UP_MIN_USD = 5      // covers Stripe's fixed fee with room to spare
+export const TOP_UP_MAX_USD = 5000
+export const TOP_UP_AMOUNTS = [10, 25, 50, 100, 250]

@@ -11,29 +11,6 @@ export function useOrigin(): string {
   return origin
 }
 
-// Step 1 of the agent path: the three lines that go into the project's env file.
-// The secret lives there, never in the chat.
-export function envBlock(origin: string, apiKey: string): string {
-  return `KEYONE_API_KEY=${apiKey}
-KEYONE_OPENAI_BASE_URL=${origin}/api/proxy/openai/v1
-KEYONE_ANTHROPIC_BASE_URL=${origin}/api/proxy/anthropic`
-}
-
-// Step 2: the message a user pastes into Claude Code or Cursor. Written in
-// the user's own voice, self-contained (no remote fetch), and secret-free,
-// so an agent's safety checks have no reason to refuse it.
-export function agentMessage(origin: string, projectName?: string): string {
-  const label = projectName ? `the "${projectName}" project` : 'this project'
-  return `I own this codebase and the key.one account it will use for ${label}. I've added KEYONE_API_KEY, KEYONE_OPENAI_BASE_URL and KEYONE_ANTHROPIC_BASE_URL to the local env file. Please route this app's model calls through key.one:
-
-1. Find every place this codebase calls OpenAI or Anthropic: official SDKs, the Vercel AI SDK, LangChain, or raw fetch. Only touch the providers actually used here.
-2. Point each call site at key.one: KEYONE_API_KEY as the API key, and the matching KEYONE_OPENAI_BASE_URL or KEYONE_ANTHROPIC_BASE_URL as the base URL. With the Vercel AI SDK that is createOpenAI({ baseURL, apiKey }) or createAnthropic({ baseURL, apiKey }). Keep any existing provider key as a fallback if one is wired in.
-3. Document the three variables in .env.example and the README. Never commit the key.
-4. Run one small test call with model "cheapest" and show me the reply and the X-Cost-USD response header.
-
-Everything you need is in this message; no need to fetch anything. Optional, for later: ${origin}/skill.md documents key.one budgets and how to handle a blocked call.`
-}
-
 // Snippets for using a project key. Agent first, unless `manualOnly` hides
 // that tab because the agent message is shown elsewhere.
 export function ConnectSnippets({ apiKey, projectName, compact = false, manualOnly = false }: { apiKey: string; projectName?: string; compact?: boolean; manualOnly?: boolean }) {
@@ -44,8 +21,8 @@ export function ConnectSnippets({ apiKey, projectName, compact = false, manualOn
   const snippets: Record<Tab, { tab: string; instruction: string; code: string }> = {
     agents: {
       tab: 'Claude Code / Cursor',
-      instruction: 'Two pastes: the env lines go into your project\u2019s .env file, the message goes into the agent\u2019s chat. The agent rewires the call sites and makes a test call.',
-      code: `# 1. Add to your project's .env (or .env.local):\n${envBlock(origin, apiKey)}\n\n# 2. Paste into Claude Code / Cursor:\n${agentMessage(origin, projectName)}`,
+      instruction: 'Paste this into the agent\u2019s chat. It installs the key.one skill, asks you for the project key, wires it into the codebase, and makes a test call.',
+      code: `set up ${origin}/skill.md`,
     },
     openai: {
       tab: 'OpenAI SDK',

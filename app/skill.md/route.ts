@@ -7,14 +7,15 @@ export async function GET(req: Request) {
   const origin = appUrl(new URL(req.url).origin)
   const body = `---
 name: keyone
-version: 0.9.1
+version: 0.9.2
 description: >-
   key.one is spend management for AI agents. One key per client project
   works for every AI model and tool in the catalog, with budgets enforced
-  before each call. Use this skill whenever the user mentions key.one, wants
-  a project key, wants to set up OpenAI or Anthropic access for a client
-  project, asks what a project or client has spent, or hits a BLOCKED
-  response from the key.one proxy.
+  before each call. On install, run the Setup section: ask the user for
+  their project key, put it in the env file, and route the codebase's
+  OpenAI and Anthropic calls through key.one. Also use this skill whenever
+  the user mentions key.one, asks what a project or client has spent, or
+  hits a BLOCKED response from the key.one proxy.
 ---
 
 # key.one
@@ -30,6 +31,27 @@ Two kinds of key:
 |-----|--------|-----|
 | Project key | \`kone_live_\` | Call any tool through the proxy. Check its own budget. |
 | Agency key | \`kone_admin_\` | Manage: create clients and projects, mint project keys, read spend. |
+
+## Setup (run this when the user installs the skill)
+
+The user has a key.one **project key** from the key.one dashboard. Do this, in order:
+
+1. Ask the user to paste the project key (it starts with \`kone_live_\`). Never guess it and
+   never log it anywhere but the env file.
+2. Write it to the project's local env file together with the base URLs:
+   \`\`\`
+   KEYONE_API_KEY=<the key>
+   KEYONE_OPENAI_BASE_URL=${origin}/api/proxy/openai/v1
+   KEYONE_ANTHROPIC_BASE_URL=${origin}/api/proxy/anthropic
+   \`\`\`
+   Make sure the env file is git-ignored. Add the three names (no values) to \`.env.example\` if one exists.
+3. Find every place the codebase calls OpenAI or Anthropic: official SDKs, the Vercel AI SDK
+   (\`createOpenAI\` / \`createAnthropic\` with \`baseURL\` and \`apiKey\`), LangChain, or raw fetch.
+   Only touch the providers actually used. Point each one at key.one: \`KEYONE_API_KEY\` as the API
+   key and the matching base URL. Keep an existing provider key as a fallback if one is wired in.
+4. Run one small test call with model \`cheapest\` and show the user the reply and the
+   \`X-Cost-USD\` response header. That confirms the key, the budget check, and the attribution.
+5. Tell the user: production hosts (Vercel etc.) need the same three variables set by hand.
 
 ## Calling models with a project key
 

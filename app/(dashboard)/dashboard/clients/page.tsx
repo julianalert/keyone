@@ -36,10 +36,9 @@ export default function ClientsPage() {
   const inactive = clients.filter(c => !c.is_active)
 
   return (
-    <div className="p-8 max-w-5xl">
+    <div className="p-8">
       <div className="mb-8 flex items-start justify-between">
         <div>
-          <p className="section-label">Clients</p>
           <h1 className="serif text-4xl font-normal">Your Clients</h1>
         </div>
         <Button onClick={() => setShowCreate(true)} size="md">New client</Button>

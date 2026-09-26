@@ -26,10 +26,9 @@ export default function ReportsPage() {
   useEffect(() => { load() }, [load])
 
   return (
-    <div className="p-8 max-w-5xl">
+    <div className="p-8">
       <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <p className="section-label">Reports</p>
           <h1 className="serif text-4xl font-normal">Spend by client</h1>
           {report && <p className="text-sm text-ink-muted mt-1">{report.range.label}</p>}
         </div>

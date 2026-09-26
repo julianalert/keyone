@@ -82,10 +82,9 @@ export default function CatalogPage() {
   }, [fetchApis, search])
 
   return (
-    <div className="p-8 max-w-5xl">
+    <div className="p-8">
       {/* Header */}
       <div className="mb-8">
-        <p className="section-label">Catalog</p>
         <h1 className="serif text-4xl font-normal mb-1">API Catalog</h1>
         <p className="text-sm text-ink-muted">
           Pre-wired APIs, ready to call. No accounts, no keys, no setup.

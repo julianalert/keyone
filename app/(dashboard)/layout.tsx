@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Sidebar } from '@/components/ui/Sidebar'
+import { UserMenu } from '@/components/ui/UserMenu'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = createClient()
@@ -10,12 +11,27 @@ export default async function DashboardLayout({ children }: { children: React.Re
     redirect('/login')
   }
 
+  const { data: membership } = await supabase
+    .from('agency_members')
+    .select('agencies(name)')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: true })
+    .limit(1)
+    .maybeSingle()
+  const agency = membership?.agencies as { name: string } | { name: string }[] | null | undefined
+  const agencyName = (Array.isArray(agency) ? agency[0]?.name : agency?.name) ?? user.user_metadata?.agency_name
+
   return (
-    <div className="flex min-h-screen bg-bg">
+    <div className="flex h-screen overflow-hidden bg-bg">
       <Sidebar />
-      <main className="flex-1 overflow-auto">
-        {children}
-      </main>
+      <div className="flex-1 min-w-0 flex flex-col">
+        <header className="h-14 shrink-0 px-8 flex items-center justify-end" style={{ borderBottom: '0.5px solid #e0ddd7' }}>
+          <UserMenu email={user.email ?? ''} name={agencyName} />
+        </header>
+        <main className="flex-1 overflow-auto">
+          {children}
+        </main>
+      </div>
     </div>
   )
 }

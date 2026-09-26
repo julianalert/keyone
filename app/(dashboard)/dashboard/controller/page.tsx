@@ -56,10 +56,9 @@ export default function ControllerPage() {
   const counts = { proposed: findings.filter(f => f.status === 'proposed').length, applied: findings.filter(f => f.status === 'applied').length, dismissed: findings.filter(f => f.status === 'dismissed').length }
 
   return (
-    <div className="p-8 max-w-5xl">
+    <div className="p-8">
       <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <p className="section-label">Controller</p>
           <h1 className="serif text-4xl font-normal">Spend review</h1>
           <p className="text-sm text-ink-muted mt-1">Runs daily. Notices, explains, proposes. Nothing changes until you apply it.</p>
         </div>

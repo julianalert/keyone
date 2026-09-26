@@ -207,7 +207,7 @@ export default function ProjectDetailPage() {
   const budgetUsed = project.monthly_budget_usd ? Math.min(100, (project.month_spend_usd / project.monthly_budget_usd) * 100) : null
 
   return (
-    <div className="p-8 max-w-5xl">
+    <div className="p-8">
       <div className="flex items-center gap-2 text-sm text-ink-muted mb-6">
         <Link href="/dashboard/clients" className="hover:text-ink transition-colors">Clients</Link>
         <span>/</span>

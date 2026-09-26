@@ -10,8 +10,7 @@ async function getOverviewData() {
   const { supabase, agencyId } = ctx
   const { monthStart, dayStart } = periodBounds()
 
-  const [agencyRes, walletRes, monthCallsRes, todayRes, clientsRes, projectsRes, recentRes, alertsRes, pendingRes] = await Promise.all([
-    supabase.from('agencies').select('name').eq('id', agencyId).single(),
+  const [walletRes, monthCallsRes, todayRes, clientsRes, projectsRes, recentRes, alertsRes, pendingRes] = await Promise.all([
     supabase.from('wallets').select('balance_usd').eq('agency_id', agencyId).single(),
     supabase.from('api_calls').select('cost_usd, client_id, project_id').eq('agency_id', agencyId).gte('created_at', monthStart),
     supabase.from('api_calls').select('id', { count: 'exact', head: true }).eq('agency_id', agencyId).gte('created_at', dayStart),
@@ -46,7 +45,6 @@ async function getOverviewData() {
   const nameOf = (rows: { id: string; name: string }[], id: string) => rows.find(r => r.id === id)?.name ?? '—'
 
   return {
-    agencyName: agencyRes.data?.name ?? 'Your agency',
     balance: Number(walletRes.data?.balance_usd ?? 0),
     monthSpend,
     todayCount: todayRes.count ?? 0,
@@ -68,10 +66,9 @@ export default async function DashboardPage() {
   const isLowBalance = data.balance < 5
 
   return (
-    <div className="p-8 max-w-5xl">
+    <div className="p-8">
       <div className="mb-8 flex items-start justify-between">
         <div>
-          <p className="section-label">{data.agencyName}</p>
           <h1 className="serif text-4xl font-normal">Overview</h1>
         </div>
         <Link href="/dashboard/wallet" className="btn-primary text-sm px-4 py-2 rounded">

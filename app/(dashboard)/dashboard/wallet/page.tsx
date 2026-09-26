@@ -76,10 +76,9 @@ export default function WalletPage() {
   const isLowBalance = (wallet?.balance_usd ?? 0) < 5
 
   return (
-    <div className="p-8 max-w-3xl">
+    <div className="p-8">
       {/* Header */}
       <div className="mb-8">
-        <p className="section-label">Wallet</p>
         <h1 className="serif text-4xl font-normal">Wallet</h1>
       </div>
 

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Card, CardContent } from '@/components/ui/Card'
@@ -17,6 +18,7 @@ interface AgencyKeyRow {
 }
 
 export default function SettingsPage() {
+  const router = useRouter()
   const [agencyName, setAgencyName] = useState('')
   const [savingName, setSavingName] = useState(false)
   const [ctl, setCtl] = useState({ alert_email: '', webhook_url: '', spike_multiplier: '10', spike_floor_usd: '10', auto_approve_increase_usd: '0' })
@@ -52,6 +54,7 @@ export default function SettingsPage() {
     setSavingName(true)
     await fetch('/api/agency', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: agencyName }) })
     setSavingName(false)
+    router.refresh()
   }
 
   async function saveControls() {
@@ -97,9 +100,8 @@ export default function SettingsPage() {
   const revoked = keys.filter(k => k.revoked_at)
 
   return (
-    <div className="p-8 max-w-5xl">
+    <div className="p-8">
       <div className="mb-8">
-        <p className="section-label">Settings</p>
         <h1 className="serif text-4xl font-normal">Agency</h1>
       </div>
 

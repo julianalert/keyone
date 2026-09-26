@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { useRouter } from 'next/navigation'
+import { useSignOut } from './useSignOut'
 
 const navItems = [
   {
@@ -63,16 +63,6 @@ const navItems = [
     ),
   },
   {
-    href: '/dashboard/settings',
-    label: 'Settings',
-    icon: (
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="8" cy="8" r="2.5" stroke="currentColor" strokeWidth="1.25"/>
-        <path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M3.4 12.6l1.4-1.4M11.2 4.8l1.4-1.4" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round"/>
-      </svg>
-    ),
-  },
-  {
     href: '/dashboard/wallet',
     label: 'Wallet',
     icon: (
@@ -88,27 +78,19 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname()
-  const router = useRouter()
-
-  async function handleSignOut() {
-    const { createClient } = await import('@/lib/supabase/client')
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    router.push('/login')
-    router.refresh()
-  }
+  const handleSignOut = useSignOut()
 
   return (
-    <aside className="w-52 min-h-screen bg-bg flex flex-col" style={{ borderRight: '0.5px solid #e0ddd7' }}>
+    <aside className="w-52 h-screen shrink-0 bg-bg flex flex-col" style={{ borderRight: '0.5px solid #e0ddd7' }}>
       {/* Logo */}
-      <div className="px-5 py-5" style={{ borderBottom: '0.5px solid #e0ddd7' }}>
+      <div className="h-14 shrink-0 px-5 flex items-center" style={{ borderBottom: '0.5px solid #e0ddd7' }}>
         <Link href="/dashboard" className="logo text-xl">
           key<span className="dot">.</span>one
         </Link>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-4 flex flex-col gap-0.5">
+      <nav className="flex-1 overflow-y-auto px-3 py-4 flex flex-col gap-0.5">
         {navItems.map(item => {
           const isActive = item.href === '/dashboard'
             ? pathname === '/dashboard'

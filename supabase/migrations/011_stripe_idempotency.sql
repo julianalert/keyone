@@ -9,7 +9,10 @@ create unique index if not exists uq_wallet_transactions_payment_intent
   on public.wallet_transactions(stripe_payment_intent_id)
   where stripe_payment_intent_id is not null;
 
-create or replace function public.topup_wallet(
+-- The return type changes (numeric → table), so the old function must go first
+drop function if exists public.topup_wallet(uuid, numeric, text);
+
+create function public.topup_wallet(
   p_agency_id uuid,
   p_amount numeric,
   p_stripe_payment_intent_id text

@@ -6,6 +6,8 @@ import { LowBalanceNotice } from '@/components/ui/LowBalanceNotice'
 import { headers } from 'next/headers'
 import { createServiceClient } from '@/lib/supabase/server'
 import { sendWelcomeIfNeeded } from '@/lib/onboarding'
+import { isPlatformAdmin } from '@/lib/platform'
+import Link from 'next/link'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = createClient()
@@ -38,7 +40,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <div className="flex-1 min-w-0 flex flex-col">
         <header className="h-14 shrink-0 px-8 flex items-center justify-between gap-4" style={{ borderBottom: '0.5px solid #e0ddd7' }}>
           <LowBalanceNotice />
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-4">
+            {isPlatformAdmin(user.email) && (
+              <Link href="/admin" className="text-2xs uppercase tracking-wider px-2 py-1 rounded bg-ink text-bg hover:opacity-80">Platform</Link>
+            )}
             <UserMenu email={user.email ?? ''} name={agencyName} />
           </div>
         </header>

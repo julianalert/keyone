@@ -32,7 +32,7 @@ export interface ClientBreakdownRow {
   model: string | null
   calls: number; blocked: number; failed: number
   input_tokens: number; output_tokens: number
-  provider_cost_usd: number; price_usd: number
+  price_usd: number
 }
 
 const num = (v: unknown) => Number(v ?? 0)
@@ -46,11 +46,11 @@ export async function clientBreakdown(supabase: SupabaseClient, clientId: string
     model: (x.model as string | null) ?? null,
     calls: num(x.calls), blocked: num(x.blocked), failed: num(x.failed),
     input_tokens: num(x.input_tokens), output_tokens: num(x.output_tokens),
-    provider_cost_usd: num(x.provider_cost_usd), price_usd: num(x.price_usd),
+    price_usd: num(x.price_usd),
   }))
 }
 
-export interface Bucket { key: string; name: string; calls: number; blocked: number; provider_cost_usd: number; price_usd: number; rebill_usd: number }
+export interface Bucket { key: string; name: string; calls: number; blocked: number; price_usd: number; rebill_usd: number }
 
 export function pivot(rows: ClientBreakdownRow[], by: 'project' | 'tool' | 'model', markupPct: number): Bucket[] {
   const m = 1 + markupPct / 100
@@ -60,9 +60,9 @@ export function pivot(rows: ClientBreakdownRow[], by: 'project' | 'tool' | 'mode
       by === 'project' ? [r.project_id, r.project_name]
       : by === 'tool' ? [r.catalog_slug, r.catalog_name]
       : [r.model ?? '—', r.model ?? '(no model)']
-    const b = acc.get(key) ?? { key, name, calls: 0, blocked: 0, provider_cost_usd: 0, price_usd: 0, rebill_usd: 0 }
+    const b = acc.get(key) ?? { key, name, calls: 0, blocked: 0, price_usd: 0, rebill_usd: 0 }
     b.calls += r.calls; b.blocked += r.blocked
-    b.provider_cost_usd += r.provider_cost_usd; b.price_usd += r.price_usd
+    b.price_usd += r.price_usd
     b.rebill_usd = b.price_usd * m
     acc.set(key, b)
   }
@@ -74,17 +74,17 @@ export function totals(rows: ClientBreakdownRow[], markupPct: number) {
     (s, r) => ({
       calls: s.calls + r.calls, blocked: s.blocked + r.blocked, failed: s.failed + r.failed,
       input_tokens: s.input_tokens + r.input_tokens, output_tokens: s.output_tokens + r.output_tokens,
-      provider_cost_usd: s.provider_cost_usd + r.provider_cost_usd, price_usd: s.price_usd + r.price_usd,
+      price_usd: s.price_usd + r.price_usd,
     }),
-    { calls: 0, blocked: 0, failed: 0, input_tokens: 0, output_tokens: 0, provider_cost_usd: 0, price_usd: 0 }
+    { calls: 0, blocked: 0, failed: 0, input_tokens: 0, output_tokens: 0, price_usd: 0 }
   )
-  return { ...t, rebill_usd: t.price_usd * (1 + markupPct / 100), margin_usd: t.price_usd - t.provider_cost_usd }
+  return { ...t, rebill_usd: t.price_usd * (1 + markupPct / 100) }
 }
 
 export interface AgencyBreakdownRow {
   client_id: string; client_name: string; rebill_markup_pct: number
   project_id: string; project_name: string
-  calls: number; blocked: number; provider_cost_usd: number; price_usd: number
+  calls: number; blocked: number; price_usd: number
 }
 
 export async function agencyBreakdown(supabase: SupabaseClient, agencyId: string, r: Range): Promise<AgencyBreakdownRow[]> {
@@ -93,7 +93,7 @@ export async function agencyBreakdown(supabase: SupabaseClient, agencyId: string
   return (data ?? []).map((x: Record<string, unknown>) => ({
     client_id: String(x.client_id), client_name: String(x.client_name), rebill_markup_pct: num(x.rebill_markup_pct),
     project_id: String(x.project_id), project_name: String(x.project_name),
-    calls: num(x.calls), blocked: num(x.blocked), provider_cost_usd: num(x.provider_cost_usd), price_usd: num(x.price_usd),
+    calls: num(x.calls), blocked: num(x.blocked), price_usd: num(x.price_usd),
   }))
 }
 
@@ -109,7 +109,7 @@ export async function clientLineItems(supabase: SupabaseClient, clientId: string
   while (out.length < max) {
     const { data, error } = await supabase
       .from('api_calls')
-      .select('created_at, project_id, model, status, input_tokens, output_tokens, cached_input_tokens, provider_cost_usd, cost_usd, pricing_status, is_stream, blocked_reason, projects(name), catalog_apis(slug, name)')
+      .select('created_at, project_id, model, status, input_tokens, output_tokens, cached_input_tokens, cost_usd, is_stream, blocked_reason, projects(name), catalog_apis(slug, name)')
       .eq('client_id', clientId)
       .gte('created_at', r.from)
       .lt('created_at', r.to)

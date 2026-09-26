@@ -14,7 +14,7 @@ import { formatUSD, formatDate } from '@/lib/utils'
 
 interface ClientReport {
   range: { label: string }
-  totals: { calls: number; blocked: number; input_tokens: number; output_tokens: number; provider_cost_usd: number; price_usd: number; rebill_usd: number; margin_usd: number }
+  totals: { calls: number; blocked: number; input_tokens: number; output_tokens: number; price_usd: number; rebill_usd: number }
   by_project: BucketRow[]
   by_tool: BucketRow[]
   by_model: BucketRow[]
@@ -265,9 +265,8 @@ export default function ClientDetailPage() {
         </div>
         {report && (
           <>
-            <div className="px-5 py-4 grid grid-cols-2 gap-4 sm:grid-cols-4" style={{ borderBottom: '0.5px solid #e0ddd7' }}>
-              <div><p className="text-xs text-ink-subtle">Provider cost</p><p className="text-lg text-ink">{formatUSD(report.totals.provider_cost_usd, 4)}</p></div>
-              <div><p className="text-xs text-ink-subtle">Charged</p><p className="text-lg text-ink">{formatUSD(report.totals.price_usd, 4)}</p></div>
+            <div className="px-5 py-4 grid grid-cols-3 gap-4" style={{ borderBottom: '0.5px solid #e0ddd7' }}>
+              <div><p className="text-xs text-ink-subtle">Spent</p><p className="text-lg text-ink">{formatUSD(report.totals.price_usd, 4)}</p></div>
               <div><p className="text-xs text-ink-subtle">Rebill</p><p className="text-lg font-medium text-green-dark">{formatUSD(report.totals.rebill_usd, 4)}</p></div>
               <div><p className="text-xs text-ink-subtle">Calls · tokens</p><p className="text-lg text-ink">{report.totals.calls} · {(report.totals.input_tokens + report.totals.output_tokens).toLocaleString()}</p></div>
             </div>

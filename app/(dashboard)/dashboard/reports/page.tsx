@@ -7,9 +7,9 @@ import { RangePicker, rangeQuery, type RangeState } from '@/components/reports/R
 import { BucketTable } from '@/components/reports/BucketTable'
 import { formatUSD } from '@/lib/utils'
 
-interface ProjectRow { project_id: string; project_name: string; calls: number; blocked: number; provider_cost_usd: number; price_usd: number; rebill_usd: number }
-interface ClientRow { client_id: string; client_name: string; rebill_markup_pct: number; calls: number; blocked: number; provider_cost_usd: number; price_usd: number; rebill_usd: number; projects: ProjectRow[] }
-interface Report { range: { label: string }; totals: { calls: number; blocked: number; provider_cost_usd: number; price_usd: number; rebill_usd: number; margin_usd: number }; clients: ClientRow[] }
+interface ProjectRow { project_id: string; project_name: string; calls: number; blocked: number; price_usd: number; rebill_usd: number }
+interface ClientRow { client_id: string; client_name: string; rebill_markup_pct: number; calls: number; blocked: number; price_usd: number; rebill_usd: number; projects: ProjectRow[] }
+interface Report { range: { label: string }; totals: { calls: number; blocked: number; price_usd: number; rebill_usd: number }; clients: ClientRow[] }
 
 export default function ReportsPage() {
   const [range, setRange] = useState<RangeState>({ range: 'this_month', from: '', to: '' })
@@ -42,9 +42,8 @@ export default function ReportsPage() {
         <div className="text-sm text-ink-muted">Loading...</div>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-4 mb-6 lg:grid-cols-4">
-            <Metric label="Provider cost" value={formatUSD(report.totals.provider_cost_usd, 4)} sub="What key.one paid" />
-            <Metric label="Charged to projects" value={formatUSD(report.totals.price_usd, 4)} sub={`Margin ${formatUSD(report.totals.margin_usd, 4)}`} />
+          <div className="grid grid-cols-3 gap-4 mb-6">
+            <Metric label="Spent" value={formatUSD(report.totals.price_usd, 4)} sub="Across all clients" />
             <Metric label="Rebill to clients" value={formatUSD(report.totals.rebill_usd, 4)} sub="With each client's markup" accent />
             <Metric label="Calls" value={report.totals.calls.toLocaleString()} sub={report.totals.blocked > 0 ? `${report.totals.blocked} blocked` : 'None blocked'} />
           </div>
@@ -66,7 +65,7 @@ export default function ReportsPage() {
               </div>
               <BucketTable
                 title="Project"
-                rows={c.projects.map(p => ({ key: p.project_id, name: p.project_name, calls: p.calls, blocked: p.blocked, provider_cost_usd: p.provider_cost_usd, price_usd: p.price_usd, rebill_usd: p.rebill_usd }))}
+                rows={c.projects.map(p => ({ key: p.project_id, name: p.project_name, calls: p.calls, blocked: p.blocked, price_usd: p.price_usd, rebill_usd: p.rebill_usd }))}
                 linkFor={r => `/dashboard/projects/${r.key}`}
               />
             </Card>

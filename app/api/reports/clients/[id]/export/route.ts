@@ -21,22 +21,22 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
   const rows: (string | number | null)[][] = [[
     'date', 'project', 'tool', 'model', 'status', 'stream', 'input_tokens', 'cached_input_tokens', 'output_tokens',
-    'provider_cost_usd', 'price_usd', 'rebill_usd', 'pricing_status', 'blocked_reason',
+    'price_usd', 'rebill_usd', 'blocked_reason',
   ]]
-  let price = 0, cost = 0
+  let price = 0
   for (const it of items) {
     const p = it.projects as { name: string } | null
     const a = it.catalog_apis as { slug: string; name: string } | null
-    const priceUsd = Number(it.cost_usd ?? 0), costUsd = Number(it.provider_cost_usd ?? 0)
-    price += priceUsd; cost += costUsd
+    const priceUsd = Number(it.cost_usd ?? 0)
+    price += priceUsd
     rows.push([
       String(it.created_at), p?.name ?? '', a?.slug ?? '', (it.model as string) ?? '', String(it.status), it.is_stream ? 'yes' : 'no',
       (it.input_tokens as number) ?? '', (it.cached_input_tokens as number) ?? '', (it.output_tokens as number) ?? '',
-      costUsd.toFixed(6), priceUsd.toFixed(6), (priceUsd * m).toFixed(6), (it.pricing_status as string) ?? '', (it.blocked_reason as string) ?? '',
+      priceUsd.toFixed(6), (priceUsd * m).toFixed(6), (it.blocked_reason as string) ?? '',
     ])
   }
   rows.push([])
-  rows.push(['TOTAL', client.name, range.label, '', `${items.length} rows`, '', '', '', '', cost.toFixed(6), price.toFixed(6), (price * m).toFixed(6), `markup ${client.rebill_markup_pct ?? 0}%`, ''])
+  rows.push(['TOTAL', client.name, range.label, '', `${items.length} rows`, '', '', '', '', price.toFixed(6), (price * m).toFixed(6), `markup ${client.rebill_markup_pct ?? 0}%`])
 
   const filename = `keyone-${client.name.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}-${range.label.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.csv`
   return new Response(csv(rows), {

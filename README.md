@@ -165,6 +165,10 @@ The controller is the FinOps review an agency wouldn't staff. `POST /api/control
 
 Projects also gained `allowed_models` (ids or prefixes); the proxy blocks other models with `reason: "project_allowed_models"`.
 
+## Platform admin (owner only)
+
+`/admin` shows what key.one earns: revenue charged to projects, estimated provider cost, gross margin, Stripe fees on top-ups, net margin, welcome credit given, per agency. Access is limited to the emails in `PLATFORM_ADMIN_EMAILS`; everyone else gets a 404 and no agency page links to it. Agency-facing reports never show provider cost or margin.
+
 ## Reports and rebill
 
 `GET /api/reports/clients/:id` and `GET /api/reports/agency` take `range=this_month|last_month` or `from=YYYY-MM-DD&to=YYYY-MM-DD` and return totals plus breakdowns (client: by project, tool, model, day; agency: by client and project). Each bucket carries `provider_cost_usd` (what key.one paid), `price_usd` (what the project was charged), and `rebill_usd` (price × the client's markup). Append `/export` for CSV: the client export is one row per call for invoicing, the agency export one row per client × project. Aggregation runs in SQL (`report_*` functions), so reports are one round trip regardless of volume.

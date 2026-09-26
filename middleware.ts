@@ -33,7 +33,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Protect all dashboard routes and the guided setup
-  if ((pathname.startsWith('/dashboard') || pathname.startsWith('/onboarding')) && !user) {
+  if ((pathname.startsWith('/dashboard') || pathname.startsWith('/onboarding') || pathname.startsWith('/admin')) && !user) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 

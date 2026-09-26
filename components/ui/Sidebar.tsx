@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { useSignOut } from './useSignOut'
+import { WalletCard } from './WalletCard'
 
 const navItems = [
   {
@@ -62,23 +62,10 @@ const navItems = [
       </svg>
     ),
   },
-  {
-    href: '/dashboard/wallet',
-    label: 'Wallet',
-    icon: (
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="1" y="4" width="14" height="10" rx="2" stroke="currentColor" strokeWidth="1.25"/>
-        <path d="M1 7h14" stroke="currentColor" strokeWidth="1.25"/>
-        <path d="M3 2h10" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round"/>
-        <circle cx="11.5" cy="11" r="1" fill="currentColor"/>
-      </svg>
-    ),
-  },
 ]
 
 export function Sidebar() {
   const pathname = usePathname()
-  const handleSignOut = useSignOut()
 
   return (
     <aside className="w-52 h-screen shrink-0 bg-bg flex flex-col" style={{ borderRight: '0.5px solid #e0ddd7' }}>
@@ -115,18 +102,9 @@ export function Sidebar() {
         })}
       </nav>
 
-      {/* Sign out */}
-      <div className="px-3 pb-5" style={{ borderTop: '0.5px solid #e0ddd7', paddingTop: '12px' }}>
-        <button
-          onClick={handleSignOut}
-          className="flex items-center gap-2.5 px-2.5 py-2 rounded text-sm text-ink-muted hover:text-ink hover:bg-border/50 transition-colors w-full"
-        >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M6 2H3a1 1 0 00-1 1v10a1 1 0 001 1h3" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round"/>
-            <path d="M10.5 5l3 3-3 3M13.5 8H6" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          Sign out
-        </button>
+      {/* Wallet */}
+      <div className="px-3 pb-4 pt-3" style={{ borderTop: '0.5px solid #e0ddd7' }}>
+        <WalletCard />
       </div>
     </aside>
   )

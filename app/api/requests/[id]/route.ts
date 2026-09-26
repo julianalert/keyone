@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { appUrl } from '@/lib/config'
 import { getSessionContext, unauthorizedResponse } from '@/lib/agency'
 import { decideBudgetRequest } from '@/lib/requests'
 
@@ -12,7 +13,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   try {
     const row = await decideBudgetRequest(ctx.supabase, params.id, action, ctx.via === 'session' ? 'dashboard' : 'mcp', {
       agency_id: ctx.agencyId,
-      origin: new URL(req.url).origin,
+      origin: appUrl(new URL(req.url).origin),
     })
     return NextResponse.json(row)
   } catch (err) {

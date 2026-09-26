@@ -1,4 +1,5 @@
 import { resolveProjectKey, extractBearer, unauthorized } from '@/lib/proxy/auth'
+import { appUrl } from '@/lib/config'
 import { createServiceClient } from '@/lib/supabase/server'
 import { createBudgetRequest } from '@/lib/requests'
 
@@ -20,7 +21,7 @@ export async function POST(req: Request) {
       requested_by: 'agent',
       requested_budget_usd: Number(body.requested_budget_usd),
       reason: typeof body.reason === 'string' ? body.reason.slice(0, 500) : undefined,
-      origin: new URL(req.url).origin,
+      origin: appUrl(new URL(req.url).origin),
     })
     return Response.json(
       {

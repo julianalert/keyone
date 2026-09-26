@@ -1,4 +1,5 @@
 import { createServiceClient } from '@/lib/supabase/server'
+import { appUrl } from '@/lib/config'
 import { decideBudgetRequest } from '@/lib/requests'
 
 export const runtime = 'nodejs'
@@ -11,16 +12,16 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   const action = url.searchParams.get('action') === 'deny' ? 'deny' : 'approve'
 
   try {
-    const row = await decideBudgetRequest(createServiceClient(), params.id, action, 'email', { token, origin: url.origin })
+    const row = await decideBudgetRequest(createServiceClient(), params.id, action, 'email', { token, origin: appUrl(url.origin) })
     return page(
       action === 'approve' ? 'Budget approved' : 'Request denied',
       action === 'approve'
         ? `The project's monthly budget is now $${Number(row.requested_budget_usd).toFixed(2)}.`
         : 'The requester will see the request as denied.',
-      `${url.origin}/dashboard/projects/${row.project_id}`
+      `${appUrl(url.origin)}/dashboard/projects/${row.project_id}`
     )
   } catch (err) {
-    return page('Nothing changed', err instanceof Error ? err.message : String(err), `${url.origin}/dashboard`, 400)
+    return page('Nothing changed', err instanceof Error ? err.message : String(err), `${appUrl(url.origin)}/dashboard`, 400)
   }
 }
 

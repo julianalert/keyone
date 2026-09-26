@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { runController } from '@/lib/controller/run'
+import { appUrl } from '@/lib/config'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
@@ -15,7 +16,7 @@ export async function GET(req: NextRequest) {
 
   const supabase = createServiceClient()
   const { data: agencies } = await supabase.from('agencies').select('id, name').eq('controller_enabled', true)
-  const origin = process.env.NEXT_PUBLIC_APP_URL ?? new URL(req.url).origin
+  const origin = appUrl(new URL(req.url).origin)
 
   const results: { agency: string; findings?: number; error?: string }[] = []
   for (const a of agencies ?? []) {

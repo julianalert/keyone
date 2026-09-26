@@ -7,6 +7,7 @@ import {
   notFound,
   insufficientBalance,
 } from '@/lib/proxy/auth'
+import { appUrl } from '@/lib/config'
 import { checkRateLimit } from '@/lib/proxy/rate-limit'
 import { MIN_BUFFER_USD } from '@/lib/billing/calculate-cost'
 import { resolveModelPrice, providerCost, userPrice, type TokenUsage, type PricingStatus } from '@/lib/billing/pricing'
@@ -92,7 +93,7 @@ export async function handleProxy(req: Request, slug: string, path?: string) {
   }
 
   const postCtx = {
-    origin: new URL(req.url).origin,
+    origin: appUrl(new URL(req.url).origin),
     before: { project_spent: decision.project_spent_usd, client_spent: decision.client_spent_usd },
   }
 

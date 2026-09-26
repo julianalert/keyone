@@ -60,6 +60,8 @@ export default function CatalogPage() {
   const [loading, setLoading] = useState(true)
   const [prices, setPrices] = useState<ModelPrice[]>([])
   const [priceProvider, setPriceProvider] = useState<string>('all')
+  const [origin, setOrigin] = useState('')
+  useEffect(() => { setOrigin(window.location.origin) }, [])
 
   useEffect(() => {
     fetch('/api/pricing').then(r => r.json()).then(d => setPrices(d.models ?? [])).catch(() => {})
@@ -150,7 +152,7 @@ export default function CatalogPage() {
       <div className="mt-12 p-5 rounded-xl bg-green-pale" style={{ border: '0.5px solid #C0DD97' }}>
         <p className="text-sm font-medium text-green-dark mb-1">How to call any API</p>
         <pre className="text-xs text-ink font-mono overflow-x-auto whitespace-pre-wrap">
-{`POST https://keyone.io/api/proxy/{slug}
+{`POST ${origin}/api/proxy/{slug}
 Authorization: Bearer kone_live_••••••••   ← your project key, nothing else
 Content-Type: application/json
 

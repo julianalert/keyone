@@ -1,8 +1,10 @@
+import { appUrl } from '@/lib/config'
+
 export const runtime = 'nodejs'
 
 // GET /skill.md — install into any agent with: set up https://<host>/skill.md
 export async function GET(req: Request) {
-  const origin = new URL(req.url).origin
+  const origin = appUrl(new URL(req.url).origin)
   const body = `---
 name: keyone
 version: 0.8.0

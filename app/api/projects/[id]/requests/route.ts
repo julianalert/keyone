@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { appUrl } from '@/lib/config'
 import { getSessionContext, unauthorizedResponse } from '@/lib/agency'
 import { createBudgetRequest } from '@/lib/requests'
 
@@ -30,7 +31,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       requested_by: ctx.via === 'session' ? 'user' : 'agent',
       requested_budget_usd: Number(body.requested_budget_usd),
       reason: typeof body.reason === 'string' ? body.reason.slice(0, 500) : undefined,
-      origin: new URL(req.url).origin,
+      origin: appUrl(new URL(req.url).origin),
     })
     return NextResponse.json(row, { status: 201 })
   } catch (err) {

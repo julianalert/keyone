@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { appUrl } from '@/lib/config'
 import { getSessionContext, unauthorizedResponse } from '@/lib/agency'
 import { createServiceClient } from '@/lib/supabase/server'
 import { applyAction } from '@/lib/controller/run'
@@ -25,7 +26,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (what === 'apply') {
     if (!finding.action) return NextResponse.json({ error: 'This finding has no proposal to apply' }, { status: 400 })
     try {
-      result = await applyAction(createServiceClient(), ctx.agencyId, finding.action as Action, new URL(req.url).origin)
+      result = await applyAction(createServiceClient(), ctx.agencyId, finding.action as Action, appUrl(new URL(req.url).origin))
     } catch (err) {
       return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 400 })
     }

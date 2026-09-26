@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { Resend } from 'resend'
+import { fromEmail } from '@/lib/config'
 
 export interface AlertInput {
   agency_id: string
@@ -48,7 +49,7 @@ export async function raiseAlert(supabase: SupabaseClient, input: AlertInput): P
   if (email && resendConfigured()) {
     try {
       await new Resend(process.env.RESEND_API_KEY).emails.send({
-        from: 'key.one <alerts@keyone.io>',
+        from: fromEmail('alerts'),
         to: email,
         subject: input.title,
         html: `<div style="font-family:sans-serif;max-width:520px;margin:0 auto;color:#1a1a18">

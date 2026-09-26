@@ -184,7 +184,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ jsonrpc: '2.0', id: null, error: { code: -32700, message: 'Parse error' } }, { status: 400 })
   }
 
-  const origin = new URL(req.url).origin
+  const origin = new URL(req.url).origin   // internal calls go back to this same deployment
   const auth = req.headers.get('authorization') ?? ''
   const api = (path: string, init?: RequestInit) =>
     fetch(`${origin}${path}`, { ...init, headers: { 'Content-Type': 'application/json', Authorization: auth, ...(init?.headers ?? {}) } })

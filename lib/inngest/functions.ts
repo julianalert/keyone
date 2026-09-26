@@ -1,6 +1,7 @@
 import { inngest } from './client'
 import { Resend } from 'resend'
 import { createServiceClient } from '@/lib/supabase/server'
+import { appUrl, fromEmail } from '@/lib/config'
 
 function getResend() {
   return new Resend(process.env.RESEND_API_KEY)
@@ -37,7 +38,7 @@ export const lowBalanceAlert = inngest.createFunction(
 
     await step.run('send-low-balance-email', async () => {
       await getResend().emails.send({
-        from: 'key.one <alerts@keyone.io>',
+        from: fromEmail('alerts'),
         to: userEmail,
         subject: `⚠️ Your key.one wallet is running low ($${balance.toFixed(2)} remaining)`,
         html: `
@@ -51,7 +52,7 @@ export const lowBalanceAlert = inngest.createFunction(
               Your agents will stop working when the balance reaches $0.
             </p>
             <a
-              href="https://keyone.io/dashboard/wallet"
+              href="${appUrl('https://getkeyone.com')}/dashboard/wallet"
               style="display: inline-block; background: #1a1a18; color: #F9F7F3; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-size: 14px;"
             >
               Top up wallet →
@@ -88,7 +89,7 @@ export const walletToppedUp = inngest.createFunction(
 
     await step.run('send-topup-confirmation', async () => {
       await getResend().emails.send({
-        from: 'key.one <receipts@keyone.io>',
+        from: fromEmail('receipts'),
         to: userEmail,
         subject: `Receipt: $${amount_usd.toFixed(2)} added to your key.one wallet`,
         html: `
@@ -101,7 +102,7 @@ export const walletToppedUp = inngest.createFunction(
               Payment reference: ${payment_intent_id}
             </p>
             <a
-              href="https://keyone.io/dashboard"
+              href="${appUrl('https://getkeyone.com')}/dashboard"
               style="display: inline-block; background: #1a1a18; color: #F9F7F3; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-size: 14px;"
             >
               View dashboard →

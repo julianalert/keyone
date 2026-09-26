@@ -1,5 +1,6 @@
 import { createServiceClient } from '@/lib/supabase/server'
 import { hashProjectKey } from '@/lib/keys'
+import { appUrl } from '@/lib/config'
 import type { CatalogApi } from '@/lib/supabase/types'
 
 // Everything the proxy needs to know about a caller, resolved from the key alone.
@@ -138,7 +139,7 @@ export function insufficientBalance(balance: number) {
     {
       error: 'Insufficient balance',
       balance_usd: balance,
-      message: 'Top up your wallet at https://keyone.io/dashboard/wallet',
+      message: `Top up your wallet at ${appUrl('https://getkeyone.com')}/dashboard/wallet`,
     },
     { status: 402 }
   )

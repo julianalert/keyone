@@ -5,6 +5,8 @@ import { getSessionContext } from '@/lib/agency'
 export const dynamic = 'force-dynamic'
 
 export const runtime = 'nodejs'
+// Long generations (Opus, Fable, big prompts) need the full function budget on Vercel
+export const maxDuration = 300
 
 // key.one MCP server. Stateless Streamable HTTP: every call is one JSON-RPC
 // POST, authenticated with an agency key. Connect from Claude Code with:

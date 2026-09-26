@@ -10,6 +10,8 @@ import { raiseAlert } from '@/lib/notify'
 import { appUrl } from '@/lib/config'
 
 export const runtime = 'nodejs'
+// Long generations (Opus, Fable, big prompts) need the full function budget on Vercel
+export const maxDuration = 300
 
 // GET /api/proxy/:slug/runs/:runId — poll an async run for completion
 export async function GET(

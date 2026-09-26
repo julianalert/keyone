@@ -128,35 +128,26 @@ export function FirstRun({ agencyName }: { agencyName: string }) {
         {step === 3 && apiKey && (
           <div className="flex flex-col gap-5">
             <div>
-              <h2 className="serif text-2xl font-normal">Your key for {projectName}</h2>
+              <h2 className="serif text-2xl font-normal">Connect {projectName}</h2>
               <p className="text-sm text-ink-muted mt-2 leading-relaxed">
-                This one key replaces your OpenAI and Anthropic keys for this project. Every call made with it is priced, checked against the budget, and logged under <span className="text-ink">{clientName} / {projectName}</span>.
+                Paste one message into Claude Code or Cursor. The agent installs key.one, swaps your provider keys for this project&apos;s key, and makes a test call.
+                From then on every call is priced, checked against the budget, and logged under <span className="text-ink">{clientName} / {projectName}</span>.
               </p>
             </div>
 
-            <div className="bg-ink rounded-lg p-5 flex flex-col gap-4">
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-2xs text-ink-subtle uppercase tracking-widest">Project key</p>
-                  <CopyButton value={apiKey} label="Copy key" dark />
-                </div>
-                <code className="text-green-light text-sm break-all font-mono">{apiKey}</code>
-                <p className="text-xs text-red-300 mt-2">Shown once. If you lose it, rotate the key from the project page.</p>
-              </div>
-
-              <div style={{ borderTop: '0.5px solid #3a3a37' }} />
-
-              <div>
-                <p className="text-sm font-medium text-bg mb-1">Hand it to Claude Code or Cursor</p>
-                <p className="text-xs text-ink-subtle mb-3">Paste this message into your coding agent&apos;s chat. It installs key.one, swaps your provider keys for this one, and makes a test call. Nothing else to do.</p>
-                <pre className="text-xs text-bg/90 font-mono rounded-md p-3 whitespace-pre-wrap break-all" style={{ background: '#2a2a27' }}>{agentMessage(origin, apiKey, projectName)}</pre>
-                <div className="mt-3">
-                  <CopyButton value={agentMessage(origin, apiKey, projectName)} label="Copy message for Claude Code / Cursor" big />
-                </div>
+            {/* Primary: the message for the agent */}
+            <div className="bg-ink rounded-lg p-5">
+              <p className="text-2xs text-ink-subtle uppercase tracking-widest mb-2">Message for Claude Code / Cursor</p>
+              <pre className="text-xs text-bg/90 font-mono rounded-md p-3 whitespace-pre-wrap break-all" style={{ background: '#2a2a27' }}>{agentMessage(origin, apiKey, projectName)}</pre>
+              <div className="mt-3">
+                <CopyButton value={agentMessage(origin, apiKey, projectName)} label="Copy message, then paste it into your agent" big />
               </div>
             </div>
 
-            <details className="group">
+            {/* Secondary: the raw key, for people who need just that */}
+            <KeyRow apiKey={apiKey} />
+
+            <details>
               <summary className="text-xs text-ink-muted hover:text-ink cursor-pointer select-none">Writing the code yourself? OpenAI SDK, Anthropic SDK, and curl snippets</summary>
               <div className="mt-3">
                 <ConnectSnippets apiKey={apiKey} projectName={projectName} manualOnly />
@@ -222,5 +213,24 @@ function CopyButton({ value, label, dark = false, big = false }: { value: string
     <button type="button" onClick={copy} className={`text-xs ${dark ? 'text-ink-subtle hover:text-green-light' : 'text-ink-muted hover:text-ink'}`}>
       {copied ? '✓ Copied' : label}
     </button>
+  )
+}
+
+// The raw key, kept quiet: masked until revealed, one line, its own copy.
+function KeyRow({ apiKey }: { apiKey: string }) {
+  const [shown, setShown] = useState(false)
+  const masked = `${apiKey.slice(0, 14)}${'•'.repeat(12)}${apiKey.slice(-4)}`
+  return (
+    <div className="rounded-lg px-4 py-3 bg-bg flex items-center justify-between gap-4 flex-wrap" style={{ border: '0.5px solid #e0ddd7' }}>
+      <div className="min-w-0">
+        <p className="text-2xs text-ink-subtle uppercase tracking-wider mb-0.5">Just need the key?</p>
+        <code className="text-xs font-mono text-ink break-all">{shown ? apiKey : masked}</code>
+        <p className="text-2xs text-ink-subtle mt-1">Shown once. If you lose it, rotate the key from the project page.</p>
+      </div>
+      <div className="flex items-center gap-3 shrink-0">
+        <button type="button" onClick={() => setShown(v => !v)} className="text-xs text-ink-muted hover:text-ink">{shown ? 'Hide' : 'Show'}</button>
+        <CopyButton value={apiKey} label="Copy key" />
+      </div>
+    </div>
   )
 }

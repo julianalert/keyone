@@ -37,9 +37,10 @@ Run the migrations in order in your Supabase project's SQL Editor:
 007_alerts_and_approvals      → alerts, spike auto-freeze, budget requests
 008_reports                   → SQL aggregates for date-ranged reports
 009_controller                → controller runs and findings, allowed models per project
+010_welcome_credit            → $3 wallet credit on signup
 ```
 
-Migration 003 drops the agent-scoped tables and recreates them. On signup a trigger creates the user's agency, membership, and wallet.
+Migration 003 drops the agent-scoped tables and recreates them. On signup a trigger creates the user's agency, membership, and wallet, credited with $3 (migration 010).
 
 ### 3. Stripe webhook
 

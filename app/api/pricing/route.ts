@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
 import { listUserPrices, marginMultiplier } from '@/lib/billing/pricing'
 
+// Never prerender: this reads live data at request time
+export const dynamic = 'force-dynamic'
+
 // GET /api/pricing — every priced model with the user price applied.
 // Public: prices are what a caller pays, not what key.one pays.
 export async function GET() {

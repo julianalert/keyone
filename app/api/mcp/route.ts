@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSessionContext } from '@/lib/agency'
 
+// Never prerender: this reads live data at request time
+export const dynamic = 'force-dynamic'
+
 export const runtime = 'nodejs'
 
 // key.one MCP server. Stateless Streamable HTTP: every call is one JSON-RPC

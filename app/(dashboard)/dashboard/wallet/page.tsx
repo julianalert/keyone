@@ -358,9 +358,12 @@ function CheckoutForm({
 
   return (
     <form onSubmit={handlePay} className="flex flex-col gap-4">
-      <div className="bg-green-pale px-4 py-3 rounded-lg text-sm text-green-dark font-medium flex items-center justify-between">
-        <span>Adding ${amount.toFixed(2)} to your wallet</span>
-        {testMode && <span className="text-2xs uppercase tracking-wider px-2 py-0.5 rounded bg-amber-50 text-amber-700">Test mode</span>}
+      <div className="px-4 py-3 rounded-lg text-sm flex items-center justify-between bg-bg" style={{ border: '0.5px solid #e0ddd7' }}>
+        <span className="text-ink-muted">Amount to add</span>
+        <span className="flex items-center gap-2">
+          <span className="font-medium text-ink">${amount.toFixed(2)}</span>
+          {testMode && <span className="text-2xs uppercase tracking-wider px-2 py-0.5 rounded bg-amber-50 text-amber-700">Test mode</span>}
+        </span>
       </div>
       <PaymentElement />
       {error && <p className="text-xs text-red-500">{error}</p>}

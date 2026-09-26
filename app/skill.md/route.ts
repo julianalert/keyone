@@ -7,7 +7,7 @@ export async function GET(req: Request) {
   const origin = appUrl(new URL(req.url).origin)
   const body = `---
 name: keyone
-version: 0.8.0
+version: 0.9.0
 description: >-
   key.one is spend management for AI agents. One key per client project
   works for every AI model and tool in the catalog, with budgets enforced
@@ -48,6 +48,10 @@ curl -X POST ${origin}/api/proxy/openai \\
   -H "Authorization: Bearer kone_live_…" -H "Content-Type: application/json" \\
   -d '{"model":"gpt-5-mini","messages":[{"role":"user","content":"Hello"}]}'
 \`\`\`
+
+\`model\` may be \`cheapest\`, \`balanced\`, or \`best\`; key.one resolves it per provider from its
+price table and returns the choice in \`X-Model-Resolved\`. Prefer \`cheapest\` unless the task
+needs more.
 
 Streaming (\`stream: true\`) works as with the provider. Every response carries
 \`X-Cost-USD\`, \`X-Call-ID\`, and, when budgets are set, \`X-Project-Budget-Remaining\`

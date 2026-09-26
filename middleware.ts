@@ -27,6 +27,11 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl
 
+  // Auth plumbing pages manage their own state
+  if (pathname.startsWith('/auth/') || pathname === '/set-password') {
+    return supabaseResponse
+  }
+
   // Protect all dashboard routes
   if (pathname.startsWith('/dashboard') && !user) {
     return NextResponse.redirect(new URL('/login', request.url))

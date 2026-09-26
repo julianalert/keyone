@@ -12,6 +12,7 @@ import { checkRateLimit } from '@/lib/proxy/rate-limit'
 import { MIN_BUFFER_USD } from '@/lib/billing/calculate-cost'
 import { resolveModelPrice, providerCost, userPrice, type TokenUsage, type PricingStatus } from '@/lib/billing/pricing'
 import { getAdapter } from '@/lib/providers'
+import { isModelShortcut, resolveModelShortcut } from '@/lib/billing/shortcuts'
 import { teeSse } from '@/lib/proxy/stream'
 import { startApifyRun } from '@/lib/proxy/async'
 import { evaluatePolicy, blockedResponse } from '@/lib/proxy/policy'
@@ -62,6 +63,14 @@ export async function handleProxy(req: Request, slug: string, path?: string) {
   } catch {
     // Empty body is fine for some endpoints
   }
+  // Model shortcuts: "cheapest" | "balanced" | "best" become a concrete id
+  let resolvedFrom: string | null = null
+  if (isModelShortcut(body.model)) {
+    const concrete = await resolveModelShortcut(catalogApi.provider, body.model)
+    if (!concrete) return Response.json({ error: `No priced models for ${catalogApi.provider} to resolve "${body.model}"` }, { status: 400 })
+    resolvedFrom = body.model
+    body = { ...body, model: concrete }
+  }
   const model = typeof body.model === 'string' ? body.model : null
 
   const supabase = createServiceClient()
@@ -102,6 +111,7 @@ export async function handleProxy(req: Request, slug: string, path?: string) {
     'X-Project-ID': caller.project_id,
     'X-Client-ID': caller.client_id,
   }
+  if (resolvedFrom && model) baseHeaders['X-Model-Resolved'] = `${resolvedFrom} → ${model}`
 
   // 6b. Async providers: start the run, return 202, bill on poll
   if (isAsync) {

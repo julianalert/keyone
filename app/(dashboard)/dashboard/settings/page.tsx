@@ -8,6 +8,8 @@ import { Card, CardContent } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { formatDate } from '@/lib/utils'
 
+interface MemberRow { user_id: string; email: string | null; role: string; joined_at: string; is_you: boolean }
+
 interface AgencyKeyRow {
   id: string
   name: string
@@ -26,6 +28,11 @@ export default function SettingsPage() {
   const [savingCtl, setSavingCtl] = useState(false)
   const [ctlMsg, setCtlMsg] = useState<string | null>(null)
   const [keys, setKeys] = useState<AgencyKeyRow[]>([])
+  const [members, setMembers] = useState<MemberRow[]>([])
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteRole, setInviteRole] = useState<'member' | 'admin'>('member')
+  const [inviting, setInviting] = useState(false)
+  const [inviteMsg, setInviteMsg] = useState<string | null>(null)
   const [newKey, setNewKey] = useState<string | null>(null)
   const [keyName, setKeyName] = useState('')
   const [busy, setBusy] = useState(false)
@@ -36,8 +43,9 @@ export default function SettingsPage() {
   useEffect(() => { setOrigin(window.location.origin) }, [])
 
   const load = useCallback(async () => {
-    const [a, k] = await Promise.all([fetch('/api/agency'), fetch('/api/agency/keys')])
+    const [a, k, m] = await Promise.all([fetch('/api/agency'), fetch('/api/agency/keys'), fetch('/api/agency/members')])
     const agency = await a.json()
+    setMembers(m.ok ? await m.json() : [])
     setAgencyName(agency.name ?? '')
     setOwnerEmail(agency.owner_email ?? '')
     setCtl({
@@ -76,6 +84,26 @@ export default function SettingsPage() {
     const data = await res.json()
     setSavingCtl(false)
     setCtlMsg(res.ok ? 'Saved' : (data.error ?? 'Failed'))
+  }
+
+  async function invite() {
+    setInviting(true); setInviteMsg(null)
+    const res = await fetch('/api/agency/members', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: inviteEmail, role: inviteRole }) })
+    const d = await res.json()
+    setInviting(false)
+    setInviteMsg(res.ok ? (d.status === 'added' ? `${d.email} added to the team.` : `Invite sent to ${d.email}.`) : (d.error ?? 'Invite failed'))
+    if (res.ok) { setInviteEmail(''); load() }
+  }
+
+  async function setRole(userId: string, role: 'admin' | 'member') {
+    await fetch(`/api/agency/members/${userId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role }) })
+    load()
+  }
+
+  async function removeMember(userId: string, email: string | null) {
+    if (!confirm(`Remove ${email ?? 'this member'} from the team?`)) return
+    await fetch(`/api/agency/members/${userId}`, { method: 'DELETE' })
+    load()
   }
 
   async function mintKey() {
@@ -117,6 +145,51 @@ export default function SettingsPage() {
           <Input id="owner-email" label="Owner" value={ownerEmail} readOnly className="text-ink-muted cursor-default" />
           <Button size="md" loading={savingName} onClick={saveName}>Save</Button>
         </CardContent>
+      </Card>
+
+      <Card className="mb-6">
+        <div className="px-5 py-4 flex items-center justify-between gap-4 flex-wrap" style={{ borderBottom: '0.5px solid #e0ddd7' }}>
+          <div>
+            <p className="text-sm font-medium text-ink">Team</p>
+            <p className="text-xs text-ink-muted">Everyone here sees every client and project. Admins can also invite and remove people.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              className="px-3 py-1.5 bg-bg border rounded text-xs text-ink placeholder:text-ink-subtle outline-none focus:border-ink-muted w-52"
+              style={{ borderWidth: '0.5px', borderColor: '#e0ddd7' }}
+              placeholder="colleague@agency.com"
+              type="email"
+              value={inviteEmail}
+              onChange={e => setInviteEmail(e.target.value)}
+            />
+            <select value={inviteRole} onChange={e => setInviteRole(e.target.value as 'member' | 'admin')} className="px-2 py-1.5 bg-bg border rounded text-xs text-ink outline-none" style={{ borderWidth: '0.5px', borderColor: '#e0ddd7' }}>
+              <option value="member">Member</option>
+              <option value="admin">Admin</option>
+            </select>
+            <Button size="sm" loading={inviting} onClick={invite} disabled={!inviteEmail}>Invite</Button>
+          </div>
+        </div>
+        {inviteMsg && <p className="px-5 pt-3 text-xs text-ink-muted">{inviteMsg}</p>}
+        <div>
+          {members.map((m, i) => (
+            <div key={m.user_id} className="px-5 py-3 flex items-center justify-between text-sm" style={i < members.length - 1 ? { borderBottom: '0.5px solid #e0ddd7' } : undefined}>
+              <div className="flex items-center gap-3">
+                <span className="text-ink">{m.email ?? m.user_id}</span>
+                {m.is_you && <span className="text-2xs text-ink-subtle">you</span>}
+                <Badge variant={m.role === 'owner' ? 'green' : 'default'}>{m.role}</Badge>
+              </div>
+              <div className="flex items-center gap-4 text-xs">
+                <span className="text-ink-muted">Joined {formatDate(m.joined_at)}</span>
+                {m.role !== 'owner' && !m.is_you && (
+                  <>
+                    <button onClick={() => setRole(m.user_id, m.role === 'admin' ? 'member' : 'admin')} className="text-ink-muted hover:text-ink">{m.role === 'admin' ? 'Make member' : 'Make admin'}</button>
+                    <button onClick={() => removeMember(m.user_id, m.email)} className="text-ink-muted hover:text-red-600">Remove</button>
+                  </>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
       </Card>
 
       <Card className="mb-6">

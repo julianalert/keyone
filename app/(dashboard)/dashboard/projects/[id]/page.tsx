@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/Input'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { KeyRevealModal } from '@/components/keys/KeyRevealModal'
+import { ConnectSnippets } from '@/components/onboarding/ConnectSnippets'
 import { formatUSD, formatDate, formatDateShort } from '@/lib/utils'
 
 interface ProjectKeyRow {
@@ -453,7 +454,11 @@ export default function ProjectDetailPage() {
           <p className="text-sm font-medium text-ink">Recent calls</p>
         </div>
         {calls.length === 0 ? (
-          <div className="px-5 py-8 text-center text-sm text-ink-muted">No calls yet. Point your agent at the proxy with this project&apos;s key.</div>
+          <div className="px-5 py-6">
+            <p className="text-sm text-ink mb-1">No calls yet.</p>
+            <p className="text-xs text-ink-muted mb-4">Point an SDK or agent at key.one with this project&apos;s key. The key was shown once when the project was created; if you don&apos;t have it, use Rotate above to issue a new one.</p>
+            <ConnectSnippets apiKey={activeKeys[0] ? `${activeKeys[0].key_prefix}…` : 'kone_live_…'} compact />
+          </div>
         ) : (
           <div>
             <div className="px-5 py-2 grid grid-cols-5 gap-4 text-2xs text-ink-subtle uppercase tracking-wider" style={{ borderBottom: '0.5px solid #e0ddd7' }}>

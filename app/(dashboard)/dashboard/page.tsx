@@ -3,6 +3,9 @@ import { redirect } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/Card'
 import { formatUSD, formatDate } from '@/lib/utils'
 import { getSessionContext, periodBounds } from '@/lib/agency'
+import { getMilestones } from '@/lib/onboarding'
+import { FirstRun } from '@/components/onboarding/FirstRun'
+import { Checklist } from '@/components/onboarding/Checklist'
 
 async function getOverviewData() {
   const ctx = await getSessionContext()
@@ -44,7 +47,16 @@ async function getOverviewData() {
 
   const nameOf = (rows: { id: string; name: string }[], id: string) => rows.find(r => r.id === id)?.name ?? '—'
 
+  const milestones = await getMilestones(supabase, agencyId)
+  const [{ data: firstProject }, { data: agencyRow }] = await Promise.all([
+    supabase.from('projects').select('id').eq('agency_id', agencyId).order('created_at', { ascending: true }).limit(1).maybeSingle(),
+    supabase.from('agencies').select('name').eq('id', agencyId).single(),
+  ])
+
   return {
+    milestones,
+    agencyName: (agencyRow?.name as string | undefined) ?? 'your agency',
+    firstProjectId: (firstProject?.id as string | undefined) ?? null,
     balance: Number(walletRes.data?.balance_usd ?? 0),
     monthSpend,
     todayCount: todayRes.count ?? 0,
@@ -65,6 +77,11 @@ export default async function DashboardPage() {
   const data = await getOverviewData()
   const isLowBalance = data.balance < 5
 
+  // Brand new agency: guided first run instead of an empty overview
+  if (!data.milestones.has_client && !data.milestones.dismissed) {
+    return <FirstRun agencyName={data.agencyName} />
+  }
+
   return (
     <div className="p-8">
       <div className="mb-8 flex items-start justify-between">
@@ -83,6 +100,10 @@ export default async function DashboardPage() {
         <MetricCard label="Calls today" value={data.todayCount.toLocaleString()} sub="Across all projects" />
         <MetricCard label="Active" value={`${data.activeClients} · ${data.activeProjects}`} sub="Clients · projects" />
       </div>
+
+      {!data.milestones.complete && !data.milestones.dismissed && (
+        <Checklist m={data.milestones} firstProjectId={data.firstProjectId} />
+      )}
 
       {data.pendingRequests > 0 && (
         <div className="mb-6 px-4 py-3 rounded-lg bg-amber-50 border text-sm text-amber-800 flex items-center justify-between" style={{ borderColor: '#fcd34d', borderWidth: '0.5px' }}>

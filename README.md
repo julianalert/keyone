@@ -40,6 +40,7 @@ Run the migrations in order in your Supabase project's SQL Editor:
 010_welcome_credit            → $3 wallet credit on signup
 011_stripe_idempotency        → one credit per payment intent
 012_refunds                   → refunds debit the wallet
+013_onboarding_and_team       → onboarding state, team policies, invite-aware signup
 ```
 
 Migration 003 drops the agent-scoped tables and recreates them. On signup a trigger creates the user's agency, membership, and wallet, credited with $3 (migration 010).
@@ -129,6 +130,18 @@ Response headers include:
 - `X-Call-ID` — log entry UUID
 - `X-Project-ID`, `X-Client-ID` — where the spend was attributed
 - `X-Tokens-Used` — `{input}+{output}` for LLM calls
+
+## Onboarding
+
+A new agency lands on a four-step first run instead of an empty overview: create a client, create a project (the key is minted), copy a connect snippet with the key and domain filled in, send a test call and see the cost land on the client. A "Getting started" checklist stays on the overview until the four milestones (project, first call, budget, agent connected) are met, derived from data, dismissable. A welcome email goes out through Resend on the first dashboard visit. Confirmation and invite links pass through `/auth/callback`, which exchanges the code for a session server-side.
+
+## Team
+
+Settings → Team invites colleagues by email. Existing key.one users are added immediately; new ones get a Supabase invite that lands on `/set-password`, and the signup trigger attaches them to the inviting agency instead of creating a new one. Roles: owner (fixed), admin (can invite and remove), member. Everyone on the team sees every client and project.
+
+## Model shortcuts
+
+A request may use `cheapest`, `balanced`, or `best` as the model. The proxy resolves it per provider from the price table (lowest, median, or highest output price among current models) and reports the choice in `X-Model-Resolved`. Allowed-model rules apply to the resolved id.
 
 ## Agents: skill, MCP, and SDK base URLs
 

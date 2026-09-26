@@ -59,7 +59,8 @@ export default async function AdminPage({ searchParams }: { searchParams?: Recor
           <h1 className="serif text-4xl font-normal">What key.one earns</h1>
           <p className="text-sm text-ink-muted mt-1">{range.label} · margin setting {((marginMultiplier() - 1) * 100).toFixed(0)}% · provider cost is estimated from list prices, not yet reconciled with provider bills</p>
         </div>
-        <div className="flex gap-1.5">
+        <div className="flex gap-1.5 items-center">
+          <Link href="/admin/reconcile" className="px-3 py-1.5 rounded text-xs bg-ink text-bg hover:opacity-80">Margin check →</Link>
           <Link href="/admin?range=this_month" className="px-3 py-1.5 rounded text-xs border border-border text-ink-muted hover:text-ink" style={{ borderWidth: '0.5px' }}>This month</Link>
           <Link href="/admin?range=last_month" className="px-3 py-1.5 rounded text-xs border border-border text-ink-muted hover:text-ink" style={{ borderWidth: '0.5px' }}>Last month</Link>
         </div>

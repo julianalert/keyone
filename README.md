@@ -42,6 +42,7 @@ Run the migrations in order in your Supabase project's SQL Editor:
 012_refunds                   → refunds debit the wallet
 013_onboarding_and_team       → onboarding state, team policies, invite-aware signup
 014_fix_member_policy_recursion → security-definer helper for the team policy
+015_reconciliation            → provider cost reconciliation table + our-side aggregate
 ```
 
 Migration 003 drops the agent-scoped tables and recreates them. On signup a trigger creates the user's agency, membership, and wallet, credited with $3 (migration 010).
@@ -168,6 +169,10 @@ Projects also gained `allowed_models` (ids or prefixes); the proxy blocks other 
 ## Platform admin (owner only)
 
 `/admin` shows what key.one earns: revenue charged to projects, estimated provider cost, gross margin, Stripe fees on top-ups, net margin, welcome credit given, per agency. Access is limited to the emails in `PLATFORM_ADMIN_EMAILS`; everyone else gets a 404 and no agency page links to it. Agency-facing reports never show provider cost or margin.
+
+## Margin check (reconciliation)
+
+`/admin/reconcile` compares what key.one estimated it would pay (tokens × price table) with what OpenAI and Anthropic actually billed, per day and per model, and shows the realized gross margin. It reads OpenAI's Organization Costs and Usage endpoints with `OPENAI_ADMIN_KEY` (optionally scoped by `OPENAI_PROJECT_ID`) and Anthropic's cost and usage reports with `ANTHROPIC_ADMIN_KEY` (optionally `ANTHROPIC_WORKSPACE_ID`). Runs daily at 08:30 UTC through `/api/admin/reconcile/cron` for the last three days so late data is caught, or on demand from the page. When a provider's actual cost differs from the estimate by more than `RECONCILE_ALERT_PCT` (default 5), platform admins get an email. Model ids are normalized (date suffixes dropped) on both sides before matching.
 
 ## Reports and rebill
 

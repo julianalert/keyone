@@ -16,11 +16,17 @@ export const openai: ProviderAdapter = {
 
   wantsStream: body => body.stream === true,
 
-  // Streams only report usage when asked
-  prepareBody: body =>
-    body.stream === true
-      ? { ...body, stream_options: { ...(body.stream_options as object ?? {}), include_usage: true } }
-      : body,
+  // Streams only report usage when asked; newer models take max_completion_tokens
+  prepareBody: body => {
+    let out = body
+    if (out.stream === true) out = { ...out, stream_options: { ...(out.stream_options as object ?? {}), include_usage: true } }
+    const model = typeof out.model === 'string' ? out.model : ''
+    if (out.max_tokens !== undefined && out.max_completion_tokens === undefined && /^(gpt-[5-9]|gpt-\d{2}|o\d)/.test(model)) {
+      const { max_tokens, ...rest } = out
+      out = { ...rest, max_completion_tokens: max_tokens }
+    }
+    return out
+  },
 
   usageFromJson: json => {
     const u = json.usage as {

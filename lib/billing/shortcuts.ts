@@ -18,7 +18,20 @@ export async function resolveModelShortcut(provider: string, shortcut: ModelShor
   const sorted = rows.slice().sort((a, b) => a.output_per_million - b.output_per_million || a.input_per_million - b.input_per_million)
   if (shortcut === 'cheapest') return sorted[0].model
   if (shortcut === 'best') return sorted[sorted.length - 1].model
-  return sorted[Math.floor(sorted.length / 2)].model
+
+  // balanced: around the geometric midpoint of the price range, newest generation wins
+  const lo = sorted[0].output_per_million, hi = sorted[sorted.length - 1].output_per_million
+  const mid = Math.sqrt(Math.max(lo, 0.01) * Math.max(hi, 0.01))
+  const near = sorted.filter(r => r.output_per_million >= mid * 0.6 && r.output_per_million <= mid * 1.4)
+  const pool = near.length ? near : [sorted[Math.floor(sorted.length / 2)]]
+  return pool.slice().sort((a, b) => version(b.model) - version(a.model))[0].model
+}
+
+// "claude-opus-5-5" → 5.5, "gpt-5.4-mini" → 5.4, "gpt-6-astra" → 6, "o4-mini" → 4
+function version(model: string): number {
+  const m = model.match(/(\d+)(?:[.-](\d+))?/)
+  if (!m) return 0
+  return Number(m[1]) + (m[2] ? Number(m[2]) / 10 : 0)
 }
 
 export { resolveModelPrice }

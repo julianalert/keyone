@@ -66,7 +66,7 @@ export function FirstRun({ agencyName }: { agencyName: string }) {
       setTest({
         reply: data.choices?.[0]?.message?.content ?? JSON.stringify(data).slice(0, 200),
         cost: res.headers.get('x-cost-usd') ?? '0',
-        model: (res.headers.get('x-model-resolved') ?? '').split('→').pop()?.trim() || data.model || 'cheapest',
+        model: (res.headers.get('x-model-resolved') ?? '').split('->').pop()?.trim() || data.model || 'cheapest',
       })
     } catch (e) { setError(e instanceof Error ? e.message : String(e)) }
     setBusy(false)

@@ -111,7 +111,7 @@ export async function handleProxy(req: Request, slug: string, path?: string) {
     'X-Project-ID': caller.project_id,
     'X-Client-ID': caller.client_id,
   }
-  if (resolvedFrom && model) baseHeaders['X-Model-Resolved'] = `${resolvedFrom} → ${model}`
+  if (resolvedFrom && model) baseHeaders['X-Model-Resolved'] = `${resolvedFrom} -> ${model}`
 
   // 6b. Async providers: start the run, return 202, bill on poll
   if (isAsync) {

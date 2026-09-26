@@ -2,18 +2,35 @@
 
 import { useState, useEffect } from 'react'
 
-type Tab = 'openai' | 'anthropic' | 'curl' | 'agents'
+type Tab = 'agents' | 'openai' | 'anthropic' | 'curl'
 
-// Copy-ready snippets with the key and the real origin filled in.
-export function ConnectSnippets({ apiKey, compact = false }: { apiKey: string; compact?: boolean }) {
-  const [tab, setTab] = useState<Tab>('openai')
+// Two ways to use a project key: hand it to a coding agent in one message,
+// or drop it into your own code. Agent first: it does the whole setup.
+export function ConnectSnippets({ apiKey, projectName, compact = false }: { apiKey: string; projectName?: string; compact?: boolean }) {
+  const [tab, setTab] = useState<Tab>('agents')
   const [origin, setOrigin] = useState('')
   const [copied, setCopied] = useState(false)
   useEffect(() => { setOrigin(process.env.NEXT_PUBLIC_APP_URL?.replace(/\/+$/, '') || window.location.origin) }, [])
 
-  const snippets: Record<Tab, { label: string; code: string }> = {
+  const label = projectName ? `"${projectName}"` : 'this project'
+
+  const snippets: Record<Tab, { tab: string; instruction: string; code: string }> = {
+    agents: {
+      tab: 'Claude Code / Cursor',
+      instruction: 'Copy this whole message and paste it into your coding agent’s chat. It installs key.one, swaps your provider keys for this one, and makes a test call.',
+      code: `Set up key.one for ${label} in this codebase.
+
+1. Install the key.one skill from ${origin}/skill.md and follow it.
+2. This is the project key. Use it for every OpenAI and Anthropic call instead of provider keys:
+   ${apiKey}
+   OpenAI SDK:    base_url = ${origin}/api/proxy/openai/v1
+   Anthropic SDK: base_url = ${origin}/api/proxy/anthropic
+3. Put the key and base URLs in this project's environment config, replace any direct OPENAI_API_KEY / ANTHROPIC_API_KEY usage, and keep the key out of git.
+4. Make one small test call with model "cheapest" and show me the reply and the X-Cost-USD header.`,
+    },
     openai: {
-      label: 'OpenAI SDK',
+      tab: 'OpenAI SDK',
+      instruction: 'Where your code creates the OpenAI client, set the base URL to key.one and use the project key as the API key. Nothing else changes.',
       code: `from openai import OpenAI
 
 client = OpenAI(
@@ -26,7 +43,8 @@ reply = client.chat.completions.create(
 )`,
     },
     anthropic: {
-      label: 'Anthropic SDK',
+      tab: 'Anthropic SDK',
+      instruction: 'Same idea for Claude: point the Anthropic client at key.one and pass the project key. Streaming and every model id work as before.',
       code: `from anthropic import Anthropic
 
 client = Anthropic(
@@ -40,19 +58,12 @@ reply = client.messages.create(
 )`,
     },
     curl: {
-      label: 'curl',
+      tab: 'curl',
+      instruction: 'Any HTTP client works. The key goes in the Authorization header; the path picks the provider.',
       code: `curl -X POST ${origin}/api/proxy/openai \\
   -H "Authorization: Bearer ${apiKey}" \\
   -H "Content-Type: application/json" \\
   -d '{"model":"cheapest","messages":[{"role":"user","content":"Hello"}]}'`,
-    },
-    agents: {
-      label: 'Claude Code / Cursor',
-      code: `# Paste into the agent's chat. It installs the key.one skill,
-# then give it this project key when it asks.
-set up ${origin}/skill.md
-
-# Project key: ${apiKey}`,
     },
   }
 
@@ -64,17 +75,18 @@ set up ${origin}/skill.md
 
   return (
     <div>
-      <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
-        <div className="flex gap-1.5 flex-wrap">
-          {(Object.keys(snippets) as Tab[]).map(t => (
-            <button key={t} type="button" onClick={() => setTab(t)} className={`px-2.5 py-1 rounded text-xs transition-colors ${tab === t ? 'bg-ink text-bg' : 'text-ink-muted hover:text-ink border border-border'}`} style={{ borderWidth: '0.5px' }}>
-              {snippets[t].label}
-            </button>
-          ))}
-        </div>
-        <button type="button" onClick={copy} className="text-xs text-ink-muted hover:text-ink">{copied ? '✓ Copied' : 'Copy'}</button>
+      <div className="flex gap-1.5 flex-wrap mb-3">
+        {(Object.keys(snippets) as Tab[]).map(t => (
+          <button key={t} type="button" onClick={() => setTab(t)} className={`px-3 py-1.5 rounded text-xs transition-colors ${tab === t ? 'bg-ink text-bg' : 'text-ink-muted hover:text-ink border border-border'}`} style={{ borderWidth: '0.5px' }}>
+            {snippets[t].tab}{t === 'agents' && tab !== t ? ' · recommended' : ''}
+          </button>
+        ))}
       </div>
-      <pre className={`text-xs text-ink font-mono bg-bg rounded-lg p-3 overflow-x-auto ${compact ? 'max-h-40' : ''}`} style={{ border: '0.5px solid #e0ddd7' }}>{snippets[tab].code}</pre>
+      <p className="text-sm text-ink mb-2">{snippets[tab].instruction}</p>
+      <div className="relative">
+        <pre className={`text-xs text-ink font-mono bg-bg rounded-lg p-3 pr-20 overflow-x-auto whitespace-pre-wrap break-all ${compact ? 'max-h-48' : ''}`} style={{ border: '0.5px solid #e0ddd7' }}>{snippets[tab].code}</pre>
+        <button type="button" onClick={copy} className="absolute top-2 right-2 text-xs px-2.5 py-1 rounded bg-ink text-bg hover:opacity-80">{copied ? '✓ Copied' : tab === 'agents' ? 'Copy message' : 'Copy'}</button>
+      </div>
     </div>
   )
 }

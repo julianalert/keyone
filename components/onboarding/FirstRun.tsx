@@ -125,17 +125,27 @@ export function FirstRun({ agencyName }: { agencyName: string }) {
         )}
 
         {step === 3 && apiKey && (
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-5">
             <div>
-              <h2 className="serif text-2xl font-normal">Connect {projectName}</h2>
-              <p className="text-sm text-red-600 font-medium mt-1">This key is shown once. Copy it now, or copy a snippet, which includes it.</p>
+              <h2 className="serif text-2xl font-normal">Your key for {projectName}</h2>
+              <p className="text-sm text-ink-muted mt-2 leading-relaxed">
+                This one key replaces your OpenAI and Anthropic keys for this project. Wherever your code or your agent would use a provider key, use this one and point it at key.one.
+                Every call it makes is priced, checked against the budget, and logged under <span className="text-ink">{clientName} / {projectName}</span>.
+              </p>
             </div>
             <div className="bg-ink rounded-lg p-4">
-              <p className="text-2xs text-ink-subtle uppercase tracking-widest mb-2">Project key</p>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-2xs text-ink-subtle uppercase tracking-widest">Project key</p>
+                <CopyKey value={apiKey} />
+              </div>
               <code className="text-green-light text-sm break-all font-mono">{apiKey}</code>
+              <p className="text-xs text-red-300 mt-2">Shown once. If you lose it, rotate the key from the project page.</p>
             </div>
-            <ConnectSnippets apiKey={apiKey} />
-            <div><Button onClick={() => setStep(4)}>I&apos;ve got it, next</Button></div>
+            <div>
+              <p className="text-sm font-medium text-ink mb-2">How do you want to use it?</p>
+              <ConnectSnippets apiKey={apiKey} projectName={projectName} />
+            </div>
+            <div><Button onClick={() => setStep(4)}>Done, let&apos;s test it</Button></div>
           </div>
         )}
 
@@ -173,5 +183,18 @@ export function FirstRun({ agencyName }: { agencyName: string }) {
 
       <p className="mt-4 text-xs text-ink-subtle">Your wallet starts with $3 of credit, enough for thousands of small calls.</p>
     </div>
+  )
+}
+
+function CopyKey({ value }: { value: string }) {
+  const [copied, setCopied] = useState(false)
+  return (
+    <button
+      type="button"
+      onClick={async () => { await navigator.clipboard.writeText(value); setCopied(true); setTimeout(() => setCopied(false), 1500) }}
+      className="text-xs text-ink-subtle hover:text-green-light"
+    >
+      {copied ? '✓ Copied' : 'Copy key'}
+    </button>
   )
 }

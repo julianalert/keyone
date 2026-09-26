@@ -457,7 +457,7 @@ export default function ProjectDetailPage() {
           <div className="px-5 py-6">
             <p className="text-sm text-ink mb-1">No calls yet.</p>
             <p className="text-xs text-ink-muted mb-4">Point an SDK or agent at key.one with this project&apos;s key. The key was shown once when the project was created; if you don&apos;t have it, use Rotate above to issue a new one.</p>
-            <ConnectSnippets apiKey={activeKeys[0] ? `${activeKeys[0].key_prefix}…` : 'kone_live_…'} compact />
+            <ConnectSnippets apiKey={activeKeys[0] ? `${activeKeys[0].key_prefix}…` : 'kone_live_…'} projectName={project.name} compact />
           </div>
         ) : (
           <div>

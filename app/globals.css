@@ -1,27 +1,110 @@
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300;1,9..40,400&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  html {
+    font-family: 'DM Sans', sans-serif;
+    background-color: #F9F7F3;
+    color: #1a1a18;
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4 {
+    letter-spacing: -0.3px;
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-}
+@layer components {
+  .btn-primary {
+    @apply bg-ink text-bg border-none px-5 py-2.5 rounded text-base font-sans cursor-pointer font-normal tracking-tight transition-opacity;
+  }
+  .btn-primary:hover {
+    @apply opacity-80;
+  }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
+  .btn-secondary {
+    @apply bg-transparent text-ink border border-border px-5 py-2.5 rounded text-base font-sans cursor-pointer font-normal transition-colors;
+    border-width: 0.5px;
+  }
+  .btn-secondary:hover {
+    @apply border-ink-muted;
+  }
+
+  .btn-green {
+    @apply bg-green-mid text-ink border-none px-5 py-2.5 rounded text-base font-sans cursor-pointer font-medium transition-opacity;
+  }
+  .btn-green:hover {
+    @apply opacity-90;
+  }
+
+  .card {
+    @apply bg-cream border border-border rounded-lg;
+    border-width: 0.5px;
+  }
+
+  .card-bg {
+    @apply bg-bg border border-border rounded-lg;
+    border-width: 0.5px;
+  }
+
+  .badge {
+    @apply inline-block bg-green-pale text-green-dark text-xs px-3 py-1 rounded-full font-medium tracking-tight;
+  }
+
+  .section-label {
+    @apply text-2xs text-ink-subtle uppercase tracking-widest font-medium mb-2;
+  }
+
+  .serif {
+    font-family: 'Instrument Serif', serif;
+  }
+
+  .logo {
+    font-family: 'Instrument Serif', serif;
+    letter-spacing: -0.3px;
+    color: #1a1a18;
+  }
+
+  .logo .dot {
+    color: #3B6D11;
+  }
+
+  .input-field {
+    @apply w-full px-3 py-2.5 bg-bg border border-border rounded text-base text-ink placeholder:text-ink-subtle outline-none transition-colors;
+    border-width: 0.5px;
+  }
+  .input-field:focus {
+    @apply border-ink-muted;
+  }
+
+  .divider {
+    @apply border-none border-t border-border;
+    border-top-width: 0.5px;
+  }
+
+  .code-block {
+    @apply bg-ink rounded-lg p-6 text-left;
+  }
+
+  .code-block pre {
+    font-family: 'DM Mono', 'Fira Code', monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    color: #C0DD97;
+    white-space: pre;
+  }
+
+  .api-price {
+    @apply text-xs text-green-dark font-medium;
   }
 }

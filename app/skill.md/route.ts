@@ -7,7 +7,7 @@ export async function GET(req: Request) {
   const origin = appUrl(new URL(req.url).origin)
   const body = `---
 name: keyone
-version: 0.9.0
+version: 0.9.1
 description: >-
   key.one is spend management for AI agents. One key per client project
   works for every AI model and tool in the catalog, with budgets enforced
@@ -33,6 +33,8 @@ Two kinds of key:
 
 ## Calling models with a project key
 
+By convention the project key and base URLs live in the app's env file as
+\`KEYONE_API_KEY\`, \`KEYONE_OPENAI_BASE_URL\` and \`KEYONE_ANTHROPIC_BASE_URL\`.
 Point the SDK at key.one and use the project key as the API key. Nothing else changes.
 
 \`\`\`python

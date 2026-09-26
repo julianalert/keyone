@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Card } from '@/components/ui/Card'
-import { ConnectSnippets, agentMessage, useOrigin } from './ConnectSnippets'
+import { ConnectSnippets, agentMessage, envBlock, useOrigin } from './ConnectSnippets'
 import { formatUSD } from '@/lib/utils'
 
 type Step = 1 | 2 | 3 | 4
@@ -136,12 +136,20 @@ export function FirstRun({ agencyName }: { agencyName: string }) {
               </p>
             </div>
 
-            {/* Primary: the message for the agent */}
-            <div className="bg-ink rounded-lg p-5">
-              <p className="text-2xs text-ink-subtle uppercase tracking-widest mb-2">Message for Claude Code / Cursor</p>
-              <pre className="text-xs text-bg/90 font-mono rounded-md p-3 whitespace-pre-wrap break-all" style={{ background: '#2a2a27' }}>{agentMessage(origin, apiKey, projectName)}</pre>
-              <div className="mt-3">
-                <CopyButton value={agentMessage(origin, apiKey, projectName)} label="Copy message, then paste it into your agent" big />
+            {/* Primary: two pastes, no secret in the chat, nothing fetched */}
+            <div className="bg-ink rounded-lg p-5 flex flex-col gap-5">
+              <div>
+                <p className="text-sm font-medium text-bg mb-1"><span className="text-green-light mr-2">1</span>Add these lines to your project&apos;s .env file</p>
+                <p className="text-xs text-ink-subtle mb-2">The key lives in the env file, not in the chat, so your agent never sees or repeats it.</p>
+                <pre className="text-xs text-bg/90 font-mono rounded-md p-3 whitespace-pre-wrap break-all" style={{ background: '#2a2a27' }}>{envBlock(origin, apiKey)}</pre>
+                <div className="mt-2"><CopyButton value={envBlock(origin, apiKey)} label="Copy env lines" big /></div>
+              </div>
+              <div style={{ borderTop: '0.5px solid #3a3a37' }} />
+              <div>
+                <p className="text-sm font-medium text-bg mb-1"><span className="text-green-light mr-2">2</span>Paste this message into Claude Code or Cursor</p>
+                <p className="text-xs text-ink-subtle mb-2">It says, in your words, that you own the project and want its model calls routed through key.one. The agent rewires the call sites and makes a test call.</p>
+                <pre className="text-xs text-bg/90 font-mono rounded-md p-3 whitespace-pre-wrap break-all" style={{ background: '#2a2a27' }}>{agentMessage(origin, projectName)}</pre>
+                <div className="mt-2"><CopyButton value={agentMessage(origin, projectName)} label="Copy message for your agent" big /></div>
               </div>
             </div>
 

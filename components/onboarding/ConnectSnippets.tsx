@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 
-type Tab = 'agents' | 'openai' | 'anthropic' | 'curl'
+type Tab = 'agents' | 'openai' | 'anthropic' | 'vercel' | 'curl'
 
 // The public origin of this deployment, read after mount so server and client match.
 export function useOrigin(): string {
@@ -11,18 +11,27 @@ export function useOrigin(): string {
   return origin
 }
 
-// The one message a user pastes into Claude Code or Cursor. The agent does the rest.
-export function agentMessage(origin: string, apiKey: string, projectName?: string): string {
-  const label = projectName ? `"${projectName}"` : 'this project'
-  return `Set up key.one for ${label} in this codebase.
+// Step 1 of the agent path: the three lines that go into the project's env file.
+// The secret lives there, never in the chat.
+export function envBlock(origin: string, apiKey: string): string {
+  return `KEYONE_API_KEY=${apiKey}
+KEYONE_OPENAI_BASE_URL=${origin}/api/proxy/openai/v1
+KEYONE_ANTHROPIC_BASE_URL=${origin}/api/proxy/anthropic`
+}
 
-1. Install the key.one skill from ${origin}/skill.md and follow it.
-2. This is the project key. Use it for every OpenAI and Anthropic call instead of provider keys:
-   ${apiKey}
-   OpenAI SDK:    base_url = ${origin}/api/proxy/openai/v1
-   Anthropic SDK: base_url = ${origin}/api/proxy/anthropic
-3. Put the key and base URLs in this project's environment config, replace any direct OPENAI_API_KEY / ANTHROPIC_API_KEY usage, and keep the key out of git.
-4. Make one small test call with model "cheapest" and show me the reply and the X-Cost-USD header.`
+// Step 2: the message a user pastes into Claude Code or Cursor. Written in
+// the user's own voice, self-contained (no remote fetch), and secret-free,
+// so an agent's safety checks have no reason to refuse it.
+export function agentMessage(origin: string, projectName?: string): string {
+  const label = projectName ? `the "${projectName}" project` : 'this project'
+  return `I own this codebase and the key.one account it will use for ${label}. I've added KEYONE_API_KEY, KEYONE_OPENAI_BASE_URL and KEYONE_ANTHROPIC_BASE_URL to the local env file. Please route this app's model calls through key.one:
+
+1. Find every place this codebase calls OpenAI or Anthropic: official SDKs, the Vercel AI SDK, LangChain, or raw fetch. Only touch the providers actually used here.
+2. Point each call site at key.one: KEYONE_API_KEY as the API key, and the matching KEYONE_OPENAI_BASE_URL or KEYONE_ANTHROPIC_BASE_URL as the base URL. With the Vercel AI SDK that is createOpenAI({ baseURL, apiKey }) or createAnthropic({ baseURL, apiKey }). Keep any existing provider key as a fallback if one is wired in.
+3. Document the three variables in .env.example and the README. Never commit the key.
+4. Run one small test call with model "cheapest" and show me the reply and the X-Cost-USD response header.
+
+Everything you need is in this message; no need to fetch anything. Optional, for later: ${origin}/skill.md documents key.one budgets and how to handle a blocked call.`
 }
 
 // Snippets for using a project key. Agent first, unless `manualOnly` hides
@@ -35,8 +44,8 @@ export function ConnectSnippets({ apiKey, projectName, compact = false, manualOn
   const snippets: Record<Tab, { tab: string; instruction: string; code: string }> = {
     agents: {
       tab: 'Claude Code / Cursor',
-      instruction: 'Copy this whole message and paste it into your coding agent’s chat. It installs key.one, swaps your provider keys for this one, and makes a test call.',
-      code: agentMessage(origin, apiKey, projectName),
+      instruction: 'Two pastes: the env lines go into your project\u2019s .env file, the message goes into the agent\u2019s chat. The agent rewires the call sites and makes a test call.',
+      code: `# 1. Add to your project's .env (or .env.local):\n${envBlock(origin, apiKey)}\n\n# 2. Paste into Claude Code / Cursor:\n${agentMessage(origin, projectName)}`,
     },
     openai: {
       tab: 'OpenAI SDK',
@@ -66,6 +75,22 @@ reply = client.messages.create(
     max_tokens=256,
     messages=[{"role": "user", "content": "Hello"}],
 )`,
+    },
+    vercel: {
+      tab: 'Vercel AI SDK',
+      instruction: 'Create the provider with a custom base URL and the project key; everything else in your app stays the same.',
+      code: `import { createOpenAI } from '@ai-sdk/openai'
+import { createAnthropic } from '@ai-sdk/anthropic'
+
+export const openai = createOpenAI({
+  baseURL: process.env.KEYONE_OPENAI_BASE_URL,   // ${origin}/api/proxy/openai/v1
+  apiKey: process.env.KEYONE_API_KEY,
+})
+export const anthropic = createAnthropic({
+  baseURL: process.env.KEYONE_ANTHROPIC_BASE_URL, // ${origin}/api/proxy/anthropic
+  apiKey: process.env.KEYONE_API_KEY,
+})
+// then: generateText({ model: openai('cheapest'), prompt: 'Hello' })`,
     },
     curl: {
       tab: 'curl',

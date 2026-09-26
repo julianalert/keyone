@@ -133,7 +133,7 @@ export default function WalletPage() {
             )}
           </div>
           <div className="flex flex-col items-end gap-1">
-            <Button onClick={() => setShowTopUp(true)} variant="green" size="md" disabled={wallet?.topup?.enabled === false}>
+            <Button onClick={() => setShowTopUp(true)} size="md" disabled={wallet?.topup?.enabled === false}>
               Add funds
             </Button>
             {wallet?.topup?.enabled === false && <span className="text-2xs text-ink-subtle">Payments not configured</span>}

@@ -13,6 +13,7 @@ export function useOrigin(): string {
 
 // Snippets for using a project key. Agent first, unless `manualOnly` hides
 // that tab because the agent message is shown elsewhere.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function ConnectSnippets({ apiKey, projectName, compact = false, manualOnly = false }: { apiKey: string; projectName?: string; compact?: boolean; manualOnly?: boolean }) {
   const [tab, setTab] = useState<Tab>(manualOnly ? 'openai' : 'agents')
   const origin = useOrigin()

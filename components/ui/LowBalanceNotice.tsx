@@ -43,7 +43,7 @@ export function LowBalanceNotice() {
         <span className="font-medium">{critical ? 'Wallet almost empty' : 'Wallet balance is low'}</span>
         <span className="hidden sm:inline"> · {formatUSD(balance, 2)} left. Every project key stops working at $0.</span>
       </span>
-      <span className="font-medium">Top up →</span>
+      <span className="font-medium whitespace-nowrap">Top up →</span>
     </Link>
   )
 }

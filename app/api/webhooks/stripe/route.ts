@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic'
 
 // POST /api/webhooks/stripe
 // Configure in Stripe → Developers → Webhooks with events:
-//   payment_intent.succeeded, payment_intent.payment_failed
+//   payment_intent.succeeded, payment_intent.payment_failed, charge.refunded
 export async function POST(req: NextRequest) {
   if (!stripeConfigured() || !process.env.STRIPE_WEBHOOK_SECRET) {
     return NextResponse.json({ error: 'Stripe webhook not configured' }, { status: 503 })
@@ -40,6 +40,29 @@ export async function POST(req: NextRequest) {
         console.error('[stripe] credit failed:', err)
         // 500 makes Stripe retry, which is what we want for a transient DB error
         return NextResponse.json({ error: 'credit failed' }, { status: 500 })
+      }
+      break
+    }
+    case 'charge.refunded': {
+      // A refund (full or partial) takes the credit back out of the wallet.
+      const charge = event.data.object as Stripe.Charge
+      const piId = typeof charge.payment_intent === 'string' ? charge.payment_intent : charge.payment_intent?.id
+      if (!piId) break
+      const intent = await getStripe().paymentIntents.retrieve(piId)
+      const agencyId = intent.metadata?.agency_id
+      if (intent.metadata?.type !== 'wallet_topup' || !agencyId) break
+      const refunds = charge.refunds?.data ?? []
+      for (const r of refunds) {
+        const amount = r.amount / 100
+        const { data, error } = await supabase
+          .rpc('refund_wallet', { p_agency_id: agencyId, p_amount: amount, p_reference: `refund:${r.id}`, p_description: `Refund of ${piId}` })
+          .single()
+        if (error) {
+          console.error('[stripe] refund debit failed:', error.message)
+          return NextResponse.json({ error: 'refund failed' }, { status: 500 })
+        }
+        const row = data as { applied: boolean; balance_usd: number | string }
+        console.log(`[stripe] ${r.id}: ${row.applied ? `debited $${amount}` : 'already applied'} → balance $${Number(row.balance_usd)}`)
       }
       break
     }

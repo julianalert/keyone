@@ -15,12 +15,12 @@ import { formatUSD, formatDate } from '@/lib/utils'
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 
 const TOP_UP_AMOUNTS = [10, 25, 50, 100, 250]
-const TOP_UP_MIN = 5
 
 interface WalletData {
   balance_usd: number
   updated_at: string
   recent_transactions: Transaction[]
+  topup?: { enabled: boolean; test_mode: boolean; min_usd: number; max_usd: number }
 }
 
 interface Transaction {
@@ -103,6 +103,8 @@ export default function WalletPage() {
 
   const effectiveAmount = customAmount ? Number(customAmount) : selectedAmount
   const isLowBalance = (wallet?.balance_usd ?? 0) < 5
+  const TOP_UP_MIN = wallet?.topup?.min_usd ?? 5
+  const TOP_UP_MAX = wallet?.topup?.max_usd ?? 5000
 
   return (
     <div className="p-8">
@@ -130,9 +132,13 @@ export default function WalletPage() {
               <p className="text-xs text-red-500 mt-1">Running low — top up to keep agents running</p>
             )}
           </div>
-          <Button onClick={() => setShowTopUp(true)} variant="green" size="md">
-            Add funds
-          </Button>
+          <div className="flex flex-col items-end gap-1">
+            <Button onClick={() => setShowTopUp(true)} variant="green" size="md" disabled={wallet?.topup?.enabled === false}>
+              Add funds
+            </Button>
+            {wallet?.topup?.enabled === false && <span className="text-2xs text-ink-subtle">Payments not configured</span>}
+            {wallet?.topup?.test_mode && <span className="text-2xs uppercase tracking-wider text-amber-700">Stripe test mode</span>}
+          </div>
         </div>
       </Card>
 
@@ -176,7 +182,7 @@ export default function WalletPage() {
                       type="number"
                       placeholder="Enter amount"
                       min={TOP_UP_MIN}
-                      max="5000"
+                      max={TOP_UP_MAX}
                       value={customAmount}
                       onChange={e => setCustomAmount(e.target.value)}
                       className="w-full px-3 py-2.5 bg-bg border rounded text-sm text-ink placeholder:text-ink-subtle outline-none focus:border-ink-muted"
@@ -263,7 +269,7 @@ export default function WalletPage() {
                       border: txn.type === 'deduction' ? '0.5px solid #e0ddd7' : 'none',
                     }}
                   >
-                    {txn.type === 'topup' ? '↑ Top-up' : '↓ Deduction'}
+                    {txn.type === 'topup' ? '↑ Top-up' : txn.description?.startsWith('Refund') ? '↩ Refund' : '↓ Deduction'}
                   </span>
                   <p className="text-2xs text-ink-subtle mt-1">{formatDate(txn.created_at)}</p>
                 </div>

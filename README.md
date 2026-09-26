@@ -39,6 +39,7 @@ Run the migrations in order in your Supabase project's SQL Editor:
 009_controller                → controller runs and findings, allowed models per project
 010_welcome_credit            → $3 wallet credit on signup
 011_stripe_idempotency        → one credit per payment intent
+012_refunds                   → refunds debit the wallet
 ```
 
 Migration 003 drops the agent-scoped tables and recreates them. On signup a trigger creates the user's agency, membership, and wallet, credited with $3 (migration 010).
@@ -51,7 +52,9 @@ Create a webhook endpoint in Stripe → Developers → Webhooks pointing at:
 ```
 https://your-domain.com/api/webhooks/stripe
 ```
-with events `payment_intent.succeeded` and `payment_intent.payment_failed`, and put its signing secret in `STRIPE_WEBHOOK_SECRET`.
+with events `payment_intent.succeeded`, `payment_intent.payment_failed`, and `charge.refunded`, and put its signing secret in `STRIPE_WEBHOOK_SECRET`. A refund in Stripe debits the wallet by the refunded amount (migration 012).
+
+To verify live payments cheaply: set `TOP_UP_MIN_USD=1`, top up $1 with a real card, confirm the credit and the webhook delivery in Stripe's dashboard, then refund it there; the wallet goes back down and you're out only Stripe's fixed fee.
 
 Credits are idempotent: the wallet page confirms the payment server-side the moment the card clears, and the webhook confirms it again; the same payment intent can only credit once (migration 011). A receipt goes out through the alerts path (email + webhook). Locally, run `stripe listen --forward-to localhost:3001/api/webhooks/stripe` and use the printed `whsec_` secret.
 

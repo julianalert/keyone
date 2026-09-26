@@ -19,6 +19,11 @@ export function getStripe(): Stripe {
   return _stripe
 }
 
-export const TOP_UP_MIN_USD = 5      // covers Stripe's fixed fee with room to spare
+// Minimum top-up. Default $5 covers Stripe's fixed fee with room to spare;
+// set TOP_UP_MIN_USD=1 temporarily to verify live payments cheaply.
+export const TOP_UP_MIN_USD = (() => {
+  const n = Number(process.env.TOP_UP_MIN_USD ?? 5)
+  return Number.isFinite(n) && n >= 0.5 ? n : 5
+})()
 export const TOP_UP_MAX_USD = 5000
 export const TOP_UP_AMOUNTS = [10, 25, 50, 100, 250]

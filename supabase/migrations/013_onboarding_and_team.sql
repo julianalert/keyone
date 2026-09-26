@@ -11,13 +11,17 @@ alter table public.agencies
 drop policy if exists "agency_members_self" on public.agency_members;
 create policy "agency_members_read" on public.agency_members
   for select using (agency_id in (select public.my_agency_ids()));
+-- Must go through a security-definer function: a policy on agency_members
+-- can't select from agency_members directly (infinite recursion).
+create or replace function public.my_admin_agency_ids()
+returns setof uuid
+language sql stable security definer set search_path = public as $$
+  select agency_id from public.agency_members
+  where user_id = auth.uid() and role in ('owner', 'admin')
+$$;
+
 create policy "agency_members_manage" on public.agency_members
-  for all using (
-    agency_id in (
-      select m.agency_id from public.agency_members m
-      where m.user_id = auth.uid() and m.role in ('owner', 'admin')
-    )
-  );
+  for all using (agency_id in (select public.my_admin_agency_ids()));
 
 -- Members can read their agency-mates' emails (for the team list)
 create policy "users_agency_mates" on public.users

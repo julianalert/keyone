@@ -41,6 +41,7 @@ Run the migrations in order in your Supabase project's SQL Editor:
 011_stripe_idempotency        → one credit per payment intent
 012_refunds                   → refunds debit the wallet
 013_onboarding_and_team       → onboarding state, team policies, invite-aware signup
+014_fix_member_policy_recursion → security-definer helper for the team policy
 ```
 
 Migration 003 drops the agent-scoped tables and recreates them. On signup a trigger creates the user's agency, membership, and wallet, credited with $3 (migration 010).

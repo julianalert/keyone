@@ -34,7 +34,10 @@ export function Checklist({ m, firstProjectId }: { m: Milestones; firstProjectId
           <p className="text-sm font-medium text-ink">Getting started</p>
           <p className="text-xs text-ink-muted">{doneCount} of {items.length} done</p>
         </div>
-        <button onClick={dismiss} className="text-xs text-ink-muted hover:text-ink">Hide</button>
+        <div className="flex items-center gap-3">
+          <Link href="/dashboard?setup=1" className="text-xs text-ink-muted hover:text-ink">Guided setup</Link>
+          <button onClick={dismiss} className="text-xs text-ink-muted hover:text-ink">Hide</button>
+        </div>
       </div>
       <div>
         {items.map((it, i) => (

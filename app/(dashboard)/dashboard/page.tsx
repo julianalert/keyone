@@ -73,12 +73,13 @@ async function getOverviewData() {
   }
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ searchParams }: { searchParams?: { setup?: string } }) {
   const data = await getOverviewData()
   const isLowBalance = data.balance < 5
 
-  // Brand new agency: guided first run instead of an empty overview
-  if (!data.milestones.has_client && !data.milestones.dismissed) {
+  // Brand new agency: guided first run instead of an empty overview.
+  // ?setup=1 reopens it for anyone (linked from the checklist).
+  if (searchParams?.setup === '1' || (!data.milestones.has_client && !data.milestones.dismissed)) {
     return <FirstRun agencyName={data.agencyName} />
   }
 

@@ -16,8 +16,15 @@ export const openai: ProviderAdapter = {
 
   wantsStream: body => body.stream === true,
 
-  // Streams only report usage when asked; newer models take max_completion_tokens
+  // Two OpenAI request shapes go through here:
+  //  - Chat Completions (body.messages): streams only report usage when asked for
+  //    via stream_options, and newer models want max_completion_tokens.
+  //  - Responses API (body.input): usage always arrives in the final
+  //    response.completed event, and stream_options / max_completion_tokens are
+  //    rejected, so the body is passed through untouched.
   prepareBody: body => {
+    const isChatCompletions = Array.isArray(body.messages)
+    if (!isChatCompletions) return body
     let out = body
     if (out.stream === true) out = { ...out, stream_options: { ...(out.stream_options as object ?? {}), include_usage: true } }
     const model = typeof out.model === 'string' ? out.model : ''
@@ -51,9 +58,9 @@ export const openai: ProviderAdapter = {
   usageFromSse: events => {
     for (let i = events.length - 1; i >= 0; i--) {
       const e = events[i]
-      if (e.usage) return openai.usageFromJson!(e)
+      if (e.usage) return openai.usageFromJson!(e)                       // Chat Completions final chunk
       const resp = e.response as Record<string, unknown> | undefined
-      if (resp?.usage) return openai.usageFromJson!(resp)
+      if (resp?.usage) return openai.usageFromJson!(resp)                // Responses API: response.completed / response.incomplete
     }
     return null
   },

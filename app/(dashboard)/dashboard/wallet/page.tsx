@@ -138,8 +138,8 @@ export default function WalletPage() {
 
       {/* Top-up modal */}
       {showTopUp && (
-        <div className="fixed inset-0 bg-ink/20 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <Card className="w-full max-w-md p-6">
+        <div className="fixed inset-0 bg-ink/20 backdrop-blur-sm z-50 flex items-start sm:items-center justify-center p-4 overflow-y-auto">
+          <Card className="w-full max-w-md p-6 my-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
               <h2 className="serif text-2xl font-normal">Add funds</h2>
               <button

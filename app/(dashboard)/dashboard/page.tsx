@@ -76,12 +76,6 @@ export default async function DashboardPage() {
         </Link>
       </div>
 
-      {isLowBalance && (
-        <div className="mb-6 px-4 py-3 rounded-lg bg-amber-50 border text-sm text-amber-800 flex items-center justify-between" style={{ borderColor: '#fcd34d', borderWidth: '0.5px' }}>
-          <span>⚠️ Wallet balance is low. Every project key stops working at $0.</span>
-          <Link href="/dashboard/wallet" className="font-medium underline underline-offset-2">Top up →</Link>
-        </div>
-      )}
 
       <div className="grid grid-cols-2 gap-4 mb-8 lg:grid-cols-4">
         <MetricCard label="Wallet balance" value={formatUSD(data.balance, 2)} sub={isLowBalance ? 'Running low' : 'Available'} accent={isLowBalance ? 'red' : 'green'} />

@@ -59,12 +59,13 @@ export function FirstRun({ agencyName }: { agencyName: string }) {
       const res = await fetch('/api/proxy/openai', {
         method: 'POST',
         headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: 'cheapest', max_tokens: 30, messages: [{ role: 'user', content: `Say hello to ${agencyName} in one short sentence.` }] }),
+        // Reasoning models spend output tokens thinking first, so leave room for a real reply
+        body: JSON.stringify({ model: 'cheapest', max_tokens: 400, messages: [{ role: 'user', content: `Say hello to ${agencyName} in one short sentence.` }] }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.message ?? data.error?.message ?? data.error ?? 'The call failed')
       setTest({
-        reply: data.choices?.[0]?.message?.content ?? JSON.stringify(data).slice(0, 200),
+        reply: data.choices?.[0]?.message?.content?.trim() || '(the model returned no text, but the call went through and was logged)',
         cost: res.headers.get('x-cost-usd') ?? '0',
         model: (res.headers.get('x-model-resolved') ?? '').split('->').pop()?.trim() || data.model || 'cheapest',
       })

@@ -137,7 +137,7 @@ Response headers include:
 
 `npm run test:compat` sends real traffic through the proxy with the client libraries customers use and checks the call log after each one: OpenAI's SDK on Chat Completions and the Responses API (buffered, streamed, tool calls), Anthropic's SDK (buffered, streamed, tools, adaptive thinking), the Vercel AI SDK on both providers (generateText, streamText, tools), LangChain on both, model shortcuts, provider errors, the allowed-models control, and a bad key. Each case must return a valid response for that library and leave a completed, priced row in the log.
 
-It needs `KEYONE_TEST_BASE_URL`, `KEYONE_TEST_PROJECT_KEY` (a key on a throwaway project) and `KEYONE_TEST_ADMIN_KEY` (an agency key of the same agency), from `.env.test.local` locally or repository secrets in CI. `.github/workflows/compat.yml` runs it after every push to `main` (waiting for that commit to be live via `/api/health`), every six hours, and on demand. A full run costs a fraction of a cent.
+It needs `KEYONE_TEST_BASE_URL`, `KEYONE_TEST_PROJECT_KEY` (a key on a throwaway project) and `KEYONE_TEST_ADMIN_KEY` (an agency key of the same agency), from `.env.test.local` locally or repository secrets in CI. `.github/workflows/compat.yml` runs it once a day at 06:00 UTC against production, and on demand from the Actions tab. Run it locally before pushing proxy or adapter changes. A full run costs a fraction of a cent per case, so keep the cadence low as the catalog grows.
 
 ## Onboarding
 

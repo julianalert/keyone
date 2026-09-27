@@ -12,7 +12,7 @@
  * Every call is tiny; a full run costs a fraction of a cent.
  */
 import fs from 'node:fs'
-import OpenAI from 'openai'
+import OpenAI, { toFile } from 'openai'
 import Anthropic from '@anthropic-ai/sdk'
 import { generateText, streamText, tool, jsonSchema } from 'ai'
 import { createOpenAI } from '@ai-sdk/openai'
@@ -231,6 +231,85 @@ add('langchain · ChatAnthropic', async () => {
   return `"${text.trim().slice(0, 30)}"`
 })
 
+// --- OpenAI official SDK: beyond chat ---
+add('openai sdk · models list (GET passthrough)', async () => {
+  const r = await oa.models.list()
+  const ids = r.data.map(m => m.id)
+  if (!ids.length) throw new Error('empty model list')
+  return `${ids.length} models`
+})
+add('openai sdk · embeddings', async () => {
+  const t0 = Date.now()
+  // Long enough that the cost survives the 6-decimal wallet precision (a 6-token embedding is $0.0000002)
+  const r = await oa.embeddings.create({ model: 'text-embedding-3-small', input: 'key.one compatibility check. '.repeat(120) })
+  if (!r.data[0]?.embedding?.length) throw new Error('no embedding')
+  const c = await expectLogged(t0, c => completedAndPriced(c) && c.model === 'text-embedding-3-small', 'embeddings')
+  return `${r.data[0].embedding.length} dims · ${c.input_tokens} tok · $${Number(c.cost_usd).toFixed(6)}`
+})
+add('openai sdk · image generation (gpt-image-1-mini, low)', async () => {
+  const t0 = Date.now()
+  const r = await oa.images.generate({ model: 'gpt-image-1-mini', prompt: 'a single red dot on white', size: '1024x1024', quality: 'low', n: 1 })
+  const b64 = r.data?.[0]?.b64_json
+  if (!b64) throw new Error('no image')
+  const c = await expectLogged(t0, c => c.status === 'completed' && Number(c.cost_usd) > 0 && c.model === 'gpt-image-1-mini', 'image')
+  return `${Math.round(b64.length * 0.75 / 1024)} KB png · $${Number(c.cost_usd).toFixed(6)}`
+})
+let spokenAudio: ArrayBuffer | null = null
+add('openai sdk · text to speech (tts-1, audio bytes)', async () => {
+  const t0 = Date.now()
+  const r = await oa.audio.speech.create({ model: 'tts-1', voice: 'alloy', input: 'Hello from key one.', response_format: 'mp3' })
+  spokenAudio = await r.arrayBuffer()
+  if (!spokenAudio.byteLength) throw new Error('no audio bytes')
+  const c = await expectLogged(t0, c => c.status === 'completed' && Number(c.cost_usd) > 0 && c.model === 'tts-1', 'tts')
+  return `${Math.round(spokenAudio.byteLength / 1024)} KB mp3 · $${Number(c.cost_usd).toFixed(6)}`
+})
+add('openai sdk · transcription (whisper-1, multipart upload)', async () => {
+  if (!spokenAudio) throw new Error('no audio from the TTS case')
+  const t0 = Date.now()
+  const file = await toFile(Buffer.from(spokenAudio), 'hello.mp3', { type: 'audio/mpeg' })
+  const r = await oa.audio.transcriptions.create({ model: 'whisper-1', file, response_format: 'json' })
+  if (!r.text) throw new Error('no transcript')
+  const c = await expectLogged(t0, c => c.status === 'completed' && Number(c.cost_usd) > 0 && c.model === 'whisper-1', 'transcription')
+  return `"${r.text.trim().slice(0, 30)}" · $${Number(c.cost_usd).toFixed(6)}`
+})
+
+// --- Perplexity: Agent API + Search API (skipped when the instance has no Perplexity key) ---
+const PPLX = `${BASE}/api/proxy/perplexity`
+async function pplx(path: string, body: unknown) {
+  const r = await fetch(`${PPLX}/${path}`, { method: 'POST', headers: { Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+  if (r.status === 503) { const j = await r.json().catch(() => ({})); if (j.error === 'provider_not_configured') return null }
+  return r
+}
+add('perplexity · agent api (sonar) · buffered', async () => {
+  const t0 = Date.now()
+  const r = await pplx('v1/agent', { model: 'perplexity/sonar', input: 'Reply with the single word: pong', max_output_tokens: 20 })
+  if (!r) return 'SKIP: Perplexity not connected on this instance'
+  if (!r.ok) throw new Error(`HTTP ${r.status} ${(await r.text()).slice(0, 120)}`)
+  const j = await r.json() as { output?: Array<{ type: string; content?: Array<{ text?: string }> }>; usage?: { cost?: { total_cost?: number } } }
+  const text = j.output?.find(o => o.type === 'message')?.content?.[0]?.text ?? ''
+  const c = await expectLogged(t0, c => completedAndPriced(c) && c.model === 'perplexity/sonar', 'perplexity agent')
+  return `"${text.trim().slice(0, 20)}" · reported $${j.usage?.cost?.total_cost?.toFixed(6)} → charged $${Number(c.cost_usd).toFixed(6)}`
+})
+add('perplexity · agent api (sonar) · streamed', async () => {
+  const t0 = Date.now()
+  const r = await pplx('v1/agent', { model: 'perplexity/sonar', input: 'Reply with the single word: pong', max_output_tokens: 20, stream: true })
+  if (!r) return 'SKIP: Perplexity not connected on this instance'
+  if (!r.ok) throw new Error(`HTTP ${r.status} ${(await r.text()).slice(0, 120)}`)
+  const text = await r.text()
+  if (!text.includes('response.completed')) throw new Error('no response.completed event')
+  const c = await expectLogged(t0, c => completedAndPriced(c) && c.model === 'perplexity/sonar', 'perplexity stream')
+  return `completed event seen · $${Number(c.cost_usd).toFixed(6)}`
+})
+add('perplexity · search api', async () => {
+  const t0 = Date.now()
+  const r = await pplx('search', { query: 'key.one spend management for AI agents', max_results: 2 })
+  if (!r) return 'SKIP: Perplexity not connected on this instance'
+  if (!r.ok) throw new Error(`HTTP ${r.status} ${(await r.text()).slice(0, 120)}`)
+  const j = await r.json() as { results?: unknown[] }
+  const c = await expectLogged(t0, c => c.status === 'completed' && Number(c.cost_usd) > 0 && c.model === 'search', 'perplexity search')
+  return `${j.results?.length ?? 0} results · $${Number(c.cost_usd).toFixed(6)}`
+})
+
 // --- proxy semantics ---
 add('model shortcut "cheapest" resolves and is priced', async () => {
   const t0 = Date.now()
@@ -275,7 +354,8 @@ add('rejects a bad key', async () => {
     const start = Date.now()
     try {
       const detail = await c.run()
-      console.log(`  PASS  ${c.name.padEnd(52)} ${detail}  (${Date.now() - start}ms)`)
+      const tag = detail.startsWith('SKIP') ? 'SKIP' : 'PASS'
+      console.log(`  ${tag}  ${c.name.padEnd(52)} ${detail}  (${Date.now() - start}ms)`)
     } catch (err) {
       failed++
       console.log(`  FAIL  ${c.name.padEnd(52)} ${err instanceof Error ? err.message : String(err)}`)

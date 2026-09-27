@@ -7,7 +7,7 @@ export async function GET(req: Request) {
   const origin = appUrl(new URL(req.url).origin)
   const body = `---
 name: keyone
-version: 0.9.2
+version: 0.9.3
 description: >-
   key.one is spend management for AI agents. One key per client project
   works for every AI model and tool in the catalog, with budgets enforced
@@ -43,15 +43,16 @@ The user has a key.one **project key** from the key.one dashboard. Do this, in o
    KEYONE_API_KEY=<the key>
    KEYONE_OPENAI_BASE_URL=${origin}/api/proxy/openai/v1
    KEYONE_ANTHROPIC_BASE_URL=${origin}/api/proxy/anthropic
+   KEYONE_PERPLEXITY_BASE_URL=${origin}/api/proxy/perplexity
    \`\`\`
-   Make sure the env file is git-ignored. Add the three names (no values) to \`.env.example\` if one exists.
-3. Find every place the codebase calls OpenAI or Anthropic: official SDKs, the Vercel AI SDK
+   Make sure the env file is git-ignored. Add the names (no values) to \`.env.example\` if one exists.
+3. Find every place the codebase calls OpenAI, Anthropic or Perplexity: official SDKs, the Vercel AI SDK
    (\`createOpenAI\` / \`createAnthropic\` with \`baseURL\` and \`apiKey\`), LangChain, or raw fetch.
    Only touch the providers actually used. Point each one at key.one: \`KEYONE_API_KEY\` as the API
    key and the matching base URL. Keep an existing provider key as a fallback if one is wired in.
 4. Run one small test call with model \`cheapest\` and show the user the reply and the
    \`X-Cost-USD\` response header. That confirms the key, the budget check, and the attribution.
-5. Tell the user: production hosts (Vercel etc.) need the same three variables set by hand.
+5. Tell the user: production hosts (Vercel etc.) need the same variables set by hand.
 
 ## Calling models with a project key
 
@@ -76,6 +77,17 @@ curl -X POST ${origin}/api/proxy/openai \\
 \`model\` may be \`cheapest\`, \`balanced\`, or \`best\`; key.one resolves it per provider from its
 price table and returns the choice in \`X-Model-Resolved\`. Prefer \`cheapest\` unless the task
 needs more.
+
+Everything a provider exposes goes through the same base URL with the project key:
+
+| Provider | Through key.one | Billed as |
+|----------|-----------------|-----------|
+| OpenAI | Chat Completions, Responses, \`/v1/images/generations\` and \`/edits\` (gpt-image, DALL·E), \`/v1/embeddings\`, \`/v1/audio/speech\`, \`/v1/audio/transcriptions\`, audio chat, moderation, \`GET /v1/models\` | tokens; TTS per character; whisper-1 per minute; DALL·E per image |
+| Anthropic | \`/v1/messages\` with streaming, tools, thinking, prompt caching, web search; \`/v1/messages/count_tokens\`; \`GET /v1/models\` | tokens; web search per call |
+| Perplexity | Agent API \`POST ${origin}/api/proxy/perplexity/v1/agent\` (Sonar plus GPT, Claude, Gemini and Grok with live web search); Search API \`POST ${origin}/api/proxy/perplexity/search\` | exactly what Perplexity reports per response |
+
+Perplexity example: \`{"model":"perplexity/sonar","input":"What changed in the EU AI Act this month?","tools":[{"type":"web_search"}]}\`.
+Ask for transcriptions as \`json\` or \`verbose_json\` so the duration is billed. Realtime (WebSocket) is not proxied.
 
 Streaming (\`stream: true\`) works as with the provider. Every response carries
 \`X-Cost-USD\`, \`X-Call-ID\`, and, when budgets are set, \`X-Project-Budget-Remaining\`

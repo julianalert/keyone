@@ -2,6 +2,7 @@ import type { ProviderAdapter } from './types'
 
 export const dataforseo: ProviderAdapter = {
   id: 'dataforseo',
+  configured: () => !!process.env.DATAFORSEO_LOGIN && !!process.env.DATAFORSEO_PASSWORD,
   buildUrl: (api, path) => (path ? `${new URL(api.base_url).origin}/${path}` : api.base_url),
   buildHeaders: () => {
     const credentials = Buffer.from(

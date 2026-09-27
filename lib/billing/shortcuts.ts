@@ -13,7 +13,8 @@ const EXCLUDE = /-pro$|codex|chat-latest|cyber|^o1|^gpt-3\.5|^gpt-4$|^gpt-4-turb
 // Resolve "cheapest" / "balanced" / "best" to a concrete model id for a provider,
 // using the price table: cheapest = lowest output price, best = highest, balanced = median.
 export async function resolveModelShortcut(provider: string, shortcut: ModelShortcut): Promise<string | null> {
-  const rows = (await listUserPrices()).filter(r => r.provider === provider && !EXCLUDE.test(r.model))
+  // Only chat models compete: no image, audio, embedding, tool or legacy rows
+  const rows = (await listUserPrices()).filter(r => r.provider === provider && r.kind === 'chat' && !EXCLUDE.test(r.model))
   if (rows.length === 0) return null
   const sorted = rows.slice().sort((a, b) => a.output_per_million - b.output_per_million || a.input_per_million - b.input_per_million)
   if (shortcut === 'cheapest') return sorted[0].model

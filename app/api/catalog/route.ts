@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
 
   let query = supabase
     .from('catalog_apis')
-    .select('id, name, slug, category, description, pricing_model, price_per_call, price_per_result, icon')
+    .select('id, name, slug, category, description, provider, pricing_model, price_per_call, price_per_result, icon')
     .eq('is_active', true)
     .order('category')
     .order('name')

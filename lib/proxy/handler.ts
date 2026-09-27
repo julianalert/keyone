@@ -10,8 +10,9 @@ import {
 import { appUrl } from '@/lib/config'
 import { checkRateLimit } from '@/lib/proxy/rate-limit'
 import { MIN_BUFFER_USD } from '@/lib/billing/calculate-cost'
-import { resolveModelPrice, providerCost, userPrice, type TokenUsage, type PricingStatus } from '@/lib/billing/pricing'
+import { resolveModelPrice, providerCost, toolFees, userPrice, type TokenUsage, type PricingStatus } from '@/lib/billing/pricing'
 import { getAdapter } from '@/lib/providers'
+import type { UsageContext } from '@/lib/providers/types'
 import { isModelShortcut, resolveModelShortcut } from '@/lib/billing/shortcuts'
 import { teeSse } from '@/lib/proxy/stream'
 import { startApifyRun } from '@/lib/proxy/async'
@@ -28,6 +29,7 @@ interface Priced {
   providerCost: number     // what key.one pays
   usage: TokenUsage | null
   status: PricingStatus | 'catalog'
+  model: string | null     // the model the call was priced as (may come from the response)
 }
 
 // Shared by /api/proxy/[slug] and the SDK-style /api/proxy/[slug]/[...path]
@@ -55,14 +57,53 @@ export async function handleProxy(req: Request, slug: string, path?: string) {
   if (!catalogApi) return notFound(`Unknown API: ${slug}`)
   const adapter = getAdapter(catalogApi.provider)
   if (!adapter) return Response.json({ error: `No adapter for provider ${catalogApi.provider}` }, { status: 500 })
-
-  // 4. Body
-  let body: Record<string, unknown> = {}
-  try {
-    body = await req.json()
-  } catch {
-    // Empty body is fine for some endpoints
+  if (!adapter.configured()) {
+    return Response.json(
+      { error: 'provider_not_configured', message: `${catalogApi.name} is not connected on this key.one instance yet.` },
+      { status: 503 }
+    )
   }
+
+  const baseHeaders: Record<string, string> = {
+    'X-RateLimit-Remaining': remaining.toString(),
+    'X-Project-ID': caller.project_id,
+    'X-Client-ID': caller.client_id,
+  }
+
+  // 3b. GET passthrough (model listings and the like): nothing to bill
+  if (req.method === 'GET') {
+    const headers = adapter.buildHeaders(catalogApi, req.headers)
+    delete headers['Content-Type']
+    let upstream: Response
+    try {
+      upstream = await fetch(adapter.buildUrl(catalogApi, path), { headers })
+    } catch (err) {
+      return Response.json({ error: 'Upstream API unreachable', detail: String(err) }, { status: 502 })
+    }
+    return new Response(upstream.body, {
+      status: upstream.status,
+      headers: { ...baseHeaders, 'Content-Type': upstream.headers.get('content-type') ?? 'application/json' },
+    })
+  }
+
+  // 4. Body: JSON, or multipart for uploads (audio transcription, image edits)
+  let body: Record<string, unknown> = {}
+  let form: FormData | null = null
+  if ((req.headers.get('content-type') ?? '').includes('multipart/form-data')) {
+    try {
+      form = await req.formData()
+      form.forEach((v, k) => { body[k] = typeof v === 'string' ? coerceField(v) : `[file ${v.name}, ${v.size} bytes]` })
+    } catch (err) {
+      return Response.json({ error: 'Malformed multipart body', detail: String(err) }, { status: 400 })
+    }
+  } else {
+    try {
+      body = await req.json()
+    } catch {
+      // Empty body is fine for some endpoints
+    }
+  }
+
   // Model shortcuts: "cheapest" | "balanced" | "best" become a concrete id
   let resolvedFrom: string | null = null
   if (isModelShortcut(body.model)) {
@@ -70,13 +111,15 @@ export async function handleProxy(req: Request, slug: string, path?: string) {
     if (!concrete) return Response.json({ error: `No priced models for ${catalogApi.provider} to resolve "${body.model}"` }, { status: 400 })
     resolvedFrom = body.model
     body = { ...body, model: concrete }
+    form?.set('model', concrete)
   }
-  const model = typeof body.model === 'string' ? body.model : null
+  const ctx: UsageContext = { path: path ?? null, body }
+  const model = typeof body.model === 'string' ? body.model : (adapter.modelFor?.(ctx) ?? null)
 
   const supabase = createServiceClient()
 
   // 5. Spend controls, before the wallet so a blocked project never touches the balance
-  const decision = await evaluatePolicy(supabase, caller, catalogApi, slug, body)
+  const decision = await evaluatePolicy(supabase, caller, catalogApi, slug, body, model, ctx.path)
   if (!decision.allowed) {
     await supabase.from('api_calls').insert({
       ...callBase(caller, catalogApi, catalogApi.base_url, body, model),
@@ -85,11 +128,7 @@ export async function handleProxy(req: Request, slug: string, path?: string) {
       status: 'blocked',
       blocked_reason: decision.reason,
     })
-    return blockedResponse(decision, {
-      'X-Project-ID': caller.project_id,
-      'X-Client-ID': caller.client_id,
-      'X-RateLimit-Remaining': remaining.toString(),
-    })
+    return blockedResponse(decision, baseHeaders)
   }
 
   // 6. Agency wallet
@@ -106,11 +145,6 @@ export async function handleProxy(req: Request, slug: string, path?: string) {
     before: { project_spent: decision.project_spent_usd, client_spent: decision.client_spent_usd },
   }
 
-  const baseHeaders: Record<string, string> = {
-    'X-RateLimit-Remaining': remaining.toString(),
-    'X-Project-ID': caller.project_id,
-    'X-Client-ID': caller.client_id,
-  }
   if (resolvedFrom && model) baseHeaders['X-Model-Resolved'] = `${resolvedFrom} -> ${model}`
 
   // 6b. Async providers: start the run, return 202, bill on poll
@@ -134,16 +168,19 @@ export async function handleProxy(req: Request, slug: string, path?: string) {
 
   // 7. Forward to the provider with key.one's credentials
   const externalUrl = adapter.buildUrl(catalogApi, path)
-  const outbound = adapter.prepareBody ? adapter.prepareBody(body) : body
-  const isStream = adapter.wantsStream?.(body) ?? false
+  const headers = adapter.buildHeaders(catalogApi, req.headers)
+  let outboundBody: BodyInit
+  if (form) {
+    delete headers['Content-Type']   // fetch sets the multipart boundary itself
+    outboundBody = form
+  } else {
+    outboundBody = JSON.stringify(adapter.prepareBody ? adapter.prepareBody(body, ctx) : body)
+  }
+  const isStream = adapter.wantsStream?.(body, ctx) ?? false
 
   let upstream: Response
   try {
-    upstream = await fetch(externalUrl, {
-      method: 'POST',
-      headers: adapter.buildHeaders(catalogApi, req.headers),
-      body: JSON.stringify(outbound),
-    })
+    upstream = await fetch(externalUrl, { method: 'POST', headers, body: outboundBody })
   } catch (err) {
     return Response.json({ error: 'Upstream API unreachable', detail: String(err) }, { status: 502 })
   }
@@ -161,9 +198,11 @@ export async function handleProxy(req: Request, slug: string, path?: string) {
     return h
   }
 
+  const upstreamType = upstream.headers.get('content-type') ?? ''
+
   // 8a. Streaming: log a pending row now (so the client gets X-Call-ID),
   //     pass the bytes through, and settle cost when the stream ends.
-  if (isStream && upstream.ok && upstream.body) {
+  if (isStream && upstream.ok && upstream.body && upstreamType.includes('text/event-stream')) {
     const { data: pending } = await supabase
       .from('api_calls')
       .insert({
@@ -177,8 +216,8 @@ export async function handleProxy(req: Request, slug: string, path?: string) {
     const callId = pending?.id ?? null
 
     const stream = teeSse(upstream.body, async events => {
-      const usage = adapter.usageFromSse?.(events) ?? null
-      const priced = await priceCall(catalogApi, model, usage, null)
+      const usage = adapter.usageFromSse?.(events, ctx) ?? adapter.usageFromRequest?.(ctx) ?? null
+      const priced = await priceCall(catalogApi, model ?? modelFromEvents(events), usage, null)
       await settleCall(supabase, caller, catalogApi, callId, {
         ...priced,
         duration_ms: Date.now() - start,
@@ -187,30 +226,36 @@ export async function handleProxy(req: Request, slug: string, path?: string) {
       }, postCtx)
     })
 
-    const headers: Record<string, string> = {
+    const streamHeaders: Record<string, string> = {
       ...baseHeaders,
-      'Content-Type': upstream.headers.get('content-type') ?? 'text/event-stream',
+      'Content-Type': upstreamType,
       'Cache-Control': 'no-cache',
       'X-Accel-Buffering': 'no',
     }
-    if (callId) headers['X-Call-ID'] = callId
-    return new Response(stream, { status: upstream.status, headers })
+    if (callId) streamHeaders['X-Call-ID'] = callId
+    return new Response(stream, { status: upstream.status, headers: streamHeaders })
   }
 
-  // 8b. Buffered response
+  // 8b. Buffered response: JSON, or bytes (audio, subtitle transcripts) passed through
   const duration = Date.now() - start
-  const data = await upstream.json().catch(() => ({})) as Record<string, unknown>
+  const isJson = upstreamType.includes('json')
+  let data: Record<string, unknown> = {}
+  let raw: ArrayBuffer | null = null
+  if (isJson) data = await upstream.json().catch(() => ({})) as Record<string, unknown>
+  else raw = await upstream.arrayBuffer()
 
-  let priced: Priced = { cost: 0, providerCost: 0, usage: null, status: 'catalog' }
+  let priced: Priced = { cost: 0, providerCost: 0, usage: null, status: 'catalog', model }
   if (upstream.ok) {
-    const usage = catalogApi.pricing_model === 'per_token' ? (adapter.usageFromJson?.(data) ?? null) : null
-    priced = await priceCall(catalogApi, model, usage, data, adapter.resultCount)
+    const usage = catalogApi.pricing_model === 'per_token'
+      ? ((isJson ? adapter.usageFromJson?.(data, ctx) : null) ?? adapter.usageFromRequest?.(ctx) ?? null)
+      : null
+    priced = await priceCall(catalogApi, model, usage, isJson ? data : null, adapter.resultCount)
   }
 
   const { data: row } = await supabase
     .from('api_calls')
     .insert({
-      ...callBase(caller, catalogApi, externalUrl, body, model),
+      ...callBase(caller, catalogApi, externalUrl, body, priced.model ?? model),
       response_status: upstream.status,
       duration_ms: duration,
       status: upstream.ok ? 'completed' : 'failed',
@@ -228,24 +273,43 @@ export async function handleProxy(req: Request, slug: string, path?: string) {
     }, postCtx)
   }
 
-  const headers: Record<string, string> = {
+  const respHeaders: Record<string, string> = {
     ...baseHeaders,
     ...budgetHeaders(priced.cost),
     'X-Cost-USD': priced.cost.toFixed(6),
     'X-Balance-Remaining': (balance - priced.cost).toFixed(6),
     'X-Pricing-Status': priced.status,
   }
-  if (callId) headers['X-Call-ID'] = callId
+  if (callId) respHeaders['X-Call-ID'] = callId
   if (priced.usage) {
-    headers['X-Tokens-Used'] = `${priced.usage.input_tokens + (priced.usage.cached_input_tokens ?? 0)}+${priced.usage.output_tokens}`
+    respHeaders['X-Tokens-Used'] = `${priced.usage.input_tokens + (priced.usage.cached_input_tokens ?? 0)}+${priced.usage.output_tokens}`
   }
 
-  return Response.json(data, { status: upstream.status, headers })
+  if (raw) return new Response(raw, { status: upstream.status, headers: { ...respHeaders, 'Content-Type': upstreamType || 'application/octet-stream' } })
+  return Response.json(data, { status: upstream.status, headers: respHeaders })
 }
 
 // ------------------------------------------------------------
 // helpers
 // ------------------------------------------------------------
+
+// Multipart form fields arrive as strings; "true", "1.5" mean what they look like
+function coerceField(v: string): unknown {
+  if (v === 'true') return true
+  if (v === 'false') return false
+  if (v !== '' && !Number.isNaN(Number(v)) && /^-?\d+(\.\d+)?$/.test(v)) return Number(v)
+  return v
+}
+
+// Perplexity presets pick the model server-side; the stream's final response says which
+function modelFromEvents(events: Record<string, unknown>[]): string | null {
+  for (let i = events.length - 1; i >= 0; i--) {
+    const resp = events[i].response as { model?: unknown } | undefined
+    if (typeof resp?.model === 'string') return resp.model
+    if (typeof events[i].model === 'string') return events[i].model as string
+  }
+  return null
+}
 
 function callBase(caller: ResolvedKey, api: CatalogApi, endpoint: string, body: Record<string, unknown>, model: string | null) {
   return {
@@ -271,19 +335,30 @@ async function priceCall(
   resultCount?: (json: unknown) => number
 ): Promise<Priced> {
   if (api.pricing_model === 'per_token') {
-    if (!usage) return { cost: 0, providerCost: 0, usage: null, status: 'unknown' }
-    const price = await resolveModelPrice(api.provider, model ?? '')
-    if (!price) return { cost: 0, providerCost: 0, usage, status: 'unknown' }
-    const pc = providerCost(price, usage)
-    return { cost: userPrice(pc), providerCost: pc, usage, status: price.status }
+    const id = model ?? (typeof data?.model === 'string' ? data.model : null)
+    if (!usage) return { cost: 0, providerCost: 0, usage: null, status: 'unknown', model: id }
+    const price = await resolveModelPrice(api.provider, id ?? '')
+    if (!price) return { cost: 0, providerCost: 0, usage, status: 'unknown', model: id }
+    // A provider-reported cost already includes its tool fees
+    const pc = providerCost(price, usage) + (usage.reported_cost_usd === undefined ? await toolFees(api.provider, usage.tool_calls) : 0)
+    return { cost: userPrice(pc), providerCost: pc, usage, status: price.status, model: id }
   }
   if (api.pricing_model === 'per_result') {
     const n = data && resultCount ? resultCount(data) : 0
     const unit = api.price_per_result ?? 0
-    return { cost: n * unit, providerCost: n * (api.cost_per_call ?? unit / 1.3), usage: null, status: 'catalog' }
+    return { cost: n * unit, providerCost: n * (api.cost_per_call ?? unit / 1.3), usage: null, status: 'catalog', model }
   }
   const cost = api.price_per_call ?? 0
-  return { cost, providerCost: api.cost_per_call ?? cost, usage: null, status: 'catalog' }
+  return { cost, providerCost: api.cost_per_call ?? cost, usage: null, status: 'catalog', model }
+}
+
+// Everything in usage beyond the three token columns, for the call log
+function usageDetail(usage: TokenUsage | null): Record<string, unknown> | null {
+  if (!usage) return null
+  const { input_tokens: _i, output_tokens: _o, cached_input_tokens: _c, ...rest } = usage
+  void _i; void _o; void _c
+  const entries = Object.entries(rest).filter(([, v]) => v !== undefined && v !== 0)
+  return entries.length ? Object.fromEntries(entries) : null
 }
 
 // Finalize the log row and deduct the wallet. Never throws into the response path.
@@ -309,6 +384,8 @@ async function settleCall(
           input_tokens: s.usage?.input_tokens ?? null,
           output_tokens: s.usage?.output_tokens ?? null,
           cached_input_tokens: s.usage?.cached_input_tokens ?? null,
+          usage_detail: usageDetail(s.usage),
+          ...(s.model ? { model: s.model } : {}),
         })
         .eq('id', callId)
     }
@@ -345,6 +422,10 @@ function sanitizePayload(body: Record<string, unknown>): Record<string, unknown>
   const sensitiveKeys = ['password', 'token', 'secret', 'key', 'authorization']
   for (const key of Object.keys(sanitized)) {
     if (sensitiveKeys.some(s => key.toLowerCase().includes(s))) sanitized[key] = '[redacted]'
+  }
+  // Base64 image payloads have no business in the log
+  for (const key of ['image', 'mask', 'b64_json', 'file']) {
+    if (typeof sanitized[key] === 'string' && (sanitized[key] as string).length > 200) sanitized[key] = '[omitted]'
   }
   return sanitized
 }

@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { clsx } from 'clsx/lite'
+import { ProviderLogo } from '@/components/ui/ProviderLogo'
 
 /* The live API catalog, same source as the dashboard's catalog page. */
 
@@ -8,13 +9,20 @@ export interface CatalogApi {
   slug: string
   category: string
   description: string | null
+  provider: string
   pricing_model: 'per_call' | 'per_result' | 'per_token'
   price_per_call: number | null
   price_per_result: number | null
   icon: string | null
+  // From the price table: how many chat models and the cheapest input price a project pays
+  models?: number
+  from_per_million?: number | null
+  kinds?: string[]
 }
 
-// Active catalog entries are readable anonymously (RLS: catalog_apis_read).
+const MARGIN = 1 + Number(process.env.KEYONE_MARGIN_PCT ?? 30) / 100
+
+// Active catalog entries and prices are readable anonymously (RLS: *_read).
 // Returns [] when the catalog can't be loaded (e.g. env vars missing at build
 // time), so the page still renders; it's regenerated hourly (see page.tsx).
 export async function getCatalog(): Promise<CatalogApi[]> {
@@ -27,14 +35,27 @@ export async function getCatalog(): Promise<CatalogApi[]> {
 
   try {
     const supabase = createClient(url, anonKey, { auth: { persistSession: false } })
-    const { data, error } = await supabase
-      .from('catalog_apis')
-      .select('name, slug, category, description, pricing_model, price_per_call, price_per_result, icon')
-      .eq('is_active', true)
-      .order('category')
-      .order('name')
+    const [{ data, error }, { data: prices }] = await Promise.all([
+      supabase
+        .from('catalog_apis')
+        .select('name, slug, category, description, provider, pricing_model, price_per_call, price_per_result, icon')
+        .eq('is_active', true)
+        .order('category')
+        .order('name'),
+      supabase.from('model_prices').select('provider, model, kind, input_per_million').eq('is_active', true).neq('model', '*'),
+    ])
     if (error) throw error
-    return data ?? []
+    return (data ?? []).map(api => {
+      const rows = (prices ?? []).filter(p => p.provider === api.provider)
+      const chat = rows.filter(p => (p.kind ?? 'chat') === 'chat')
+      const cheapest = chat.length ? Math.min(...chat.map(p => Number(p.input_per_million))) * MARGIN : null
+      return {
+        ...api,
+        models: chat.length,
+        from_per_million: cheapest,
+        kinds: Array.from(new Set(rows.map(p => p.kind ?? 'chat'))),
+      }
+    })
   } catch (error) {
     console.error('Landing page catalog fetch failed:', error)
     return []
@@ -59,7 +80,10 @@ const CATEGORY_TINTS: Record<string, string> = {
 const NEUTRAL_TINT = 'bg-olive-950/5 text-olive-700 dark:bg-white/10 dark:text-olive-300'
 
 function formatPrice(api: CatalogApi): string {
-  if (api.pricing_model === 'per_token') return 'from $0.20 / 1M tokens'
+  if (api.pricing_model === 'per_token') {
+    if (api.from_per_million !== null && api.from_per_million !== undefined) return `${api.models} models · from $${api.from_per_million.toFixed(2)} / 1M tokens`
+    return 'per token'
+  }
   if (api.pricing_model === 'per_result' && api.price_per_result) return `$${api.price_per_result.toFixed(4)} / result`
   if (api.pricing_model === 'per_call' && api.price_per_call) return `$${api.price_per_call.toFixed(4)} / call`
   return 'per call'
@@ -71,15 +95,13 @@ export function CatalogCard({ api }: { api: CatalogApi }) {
   return (
     <div className="flex flex-col gap-4 rounded-xl bg-white p-6 ring-1 ring-olive-950/5 dark:bg-white/5 dark:ring-white/10">
       <div className="flex items-start gap-3">
-        <div className={clsx('flex size-10 shrink-0 items-center justify-center rounded-lg text-lg', tint)}>
-          {api.icon ?? '🔌'}
+        <div className={clsx('flex size-10 shrink-0 items-center justify-center rounded-lg text-olive-950 dark:text-white', tint)}>
+          <ProviderLogo provider={api.provider} size={20} />
         </div>
-        <div className="min-w-0">
-          <h3 className="text-base/7 font-medium text-olive-950 dark:text-white">{api.name}</h3>
-          <span className={clsx('inline-block rounded-full px-2 text-xs/5 font-medium', tint)}>
-            {CATEGORY_LABELS[api.category] ?? api.category}
-          </span>
-        </div>
+        <h3 className="min-w-0 flex-1 pt-1.5 text-base/7 font-medium text-olive-950 dark:text-white">{api.name}</h3>
+        <span className={clsx('shrink-0 rounded-full px-2 text-xs/5 font-medium', tint)}>
+          {CATEGORY_LABELS[api.category] ?? api.category}
+        </span>
       </div>
       <p className="flex-1 text-sm/7 text-olive-700 dark:text-olive-400">
         {api.description ?? 'No description available.'}

@@ -43,6 +43,7 @@ Run the migrations in order in your Supabase project's SQL Editor:
 013_onboarding_and_team       → onboarding state, team policies, invite-aware signup
 014_fix_member_policy_recursion → security-definer helper for the team policy
 015_reconciliation            → provider cost reconciliation table + our-side aggregate
+016_catalog_refresh           → multi-unit prices (images, audio, characters, minutes, requests), Perplexity Agent API, hidden unconnected tools
 ```
 
 Migration 003 drops the agent-scoped tables and recreates them. On signup a trigger creates the user's agency, membership, and wallet, credited with $3 (migration 010).
@@ -107,15 +108,17 @@ POST /api/proxy/{slug}
 
 Keys are SHA-256 hashed at rest. A project can hold several keys (rotation); revoking one never touches the project's history or budget.
 
-## V1 Catalog
+## Catalog
 
-| API | Slug | Pricing |
-|-----|------|---------|
-| OpenAI (GPT-4o, GPT-4o-mini) | `openai` | per token |
-| Anthropic (Claude Sonnet, Haiku) | `anthropic` | per token |
-| Perplexity (Sonar, Sonar Pro) | `perplexity` | per call |
-| Google Maps via Apify | `apify-google-maps` | per result |
-| DataForSEO | `dataforseo` | per result |
+| Tool | Slug | What goes through | Billing |
+|------|------|-------------------|---------|
+| OpenAI | `openai` | Chat Completions, Responses, images (`gpt-image-*`, DALL·E), embeddings, text-to-speech, transcription, audio chat, moderation, `GET /v1/models` | tokens; characters for TTS; minutes for whisper-1 / gpt-transcribe; per image for DALL·E; hosted web/file search per call |
+| Anthropic | `anthropic` | Messages (streaming, tools, thinking, prompt caching incl. 1-hour writes, fast mode, web search), token counting, `GET /v1/models` | tokens; web search per call |
+| Perplexity | `perplexity` | Agent API (`/v1/agent`: Sonar plus GPT, Claude, Gemini, Grok with web search, URL fetch, people and finance search) and Search API (`/search`) | the cost Perplexity reports on each response; Search per request |
+
+Google Maps via Apify and DataForSEO exist as adapters but are hidden from the catalog (`is_active = false`) until real accounts are wired in. Gemini direct is next on the list; today Gemini models are reachable through Perplexity.
+
+Catalog cards show provider logos, the number of chat models and the cheapest input price straight from the price table, so nothing on the card can go stale.
 
 ## Calling the proxy
 
@@ -135,7 +138,7 @@ Response headers include:
 
 ## Compatibility suite
 
-`npm run test:compat` sends real traffic through the proxy with the client libraries customers use and checks the call log after each one: OpenAI's SDK on Chat Completions and the Responses API (buffered, streamed, tool calls), Anthropic's SDK (buffered, streamed, tools, adaptive thinking), the Vercel AI SDK on both providers (generateText, streamText, tools), LangChain on both, model shortcuts, provider errors, the allowed-models control, and a bad key. Each case must return a valid response for that library and leave a completed, priced row in the log.
+`npm run test:compat` sends real traffic through the proxy with the client libraries customers use and checks the call log after each one: OpenAI's SDK on Chat Completions and the Responses API (buffered, streamed, tool calls), embeddings, image generation, text-to-speech and transcription, model listing, Anthropic's SDK (buffered, streamed, tools, adaptive thinking), the Vercel AI SDK on both providers (generateText, streamText, tools), LangChain on both, Perplexity's Agent and Search APIs (skipped with a SKIP line when the instance has no Perplexity key), model shortcuts, provider errors, the allowed-models control, and a bad key. Each case must return a valid response for that library and leave a completed, priced row in the log.
 
 It needs `KEYONE_TEST_BASE_URL`, `KEYONE_TEST_PROJECT_KEY` (a key on a throwaway project) and `KEYONE_TEST_ADMIN_KEY` (an agency key of the same agency), from `.env.test.local` locally or repository secrets in CI. `.github/workflows/compat.yml` runs it once a day at 06:00 UTC against production, and on demand from the Actions tab. Run it locally before pushing proxy or adapter changes. A full run costs a fraction of a cent per case, so keep the cadence low as the catalog grows.
 
@@ -188,7 +191,11 @@ Projects also gained `allowed_models` (ids or prefixes); the proxy blocks other 
 
 Each upstream provider is one adapter in `lib/providers/` (URL, headers, body tweaks, token or result accounting). Adding a tool means one catalog row and, if it bills per token, rows in `model_prices`. No proxy code changes.
 
-Prices live in the `model_prices` table as wholesale per-1M-token rates and are cached for a minute. The user price is wholesale × (1 + `KEYONE_MARGIN_PCT` / 100), default 30%. Model lookup is exact id, then the id without a date suffix, then the longest known prefix, then the provider's `*` row. An unknown model is therefore charged at the provider's top tier rather than for free, and the call is tagged `pricing_status = 'fallback'` so it stands out. `GET /api/pricing` lists user prices. Long-context surcharges are not modeled yet.
+Prices live in the `model_prices` table as wholesale rates and are cached for a minute. Each row has a `kind` (chat, image, embedding, speech, transcription, audio, moderation, search, tool, legacy) and a `unit` (token, character, minute, request, image). Token rows carry input / cached / output per 1M plus optional image and audio token rates; character rows bill TTS input; minute and request rows use `per_unit`. `tool:<name>` rows price hosted tool calls (web search, file search, URL fetch) counted from the response. The user price is wholesale × (1 + `KEYONE_MARGIN_PCT` / 100), default 30%. Model lookup is exact id, then the id without a date suffix, then the longest known prefix, then the provider's `*` row. An unknown model is therefore charged at the provider's top tier rather than for free, and the call is tagged `pricing_status = 'fallback'` so it stands out. `GET /api/pricing` lists user prices; `api_calls.usage_detail` keeps everything beyond text tokens (image tokens, minutes, characters, tool calls, reported cost).
+
+When a provider reports the cost itself (Perplexity's `usage.cost.total_cost`), that number is the provider cost and the margin goes on top of it; no estimate is involved. Anthropic fast mode (`speed: "fast"`) bills at 2× on the models that support it. Long-context and OpenAI priority/flex tiers are not modeled yet.
+
+The proxy accepts JSON and multipart bodies (audio transcription, image edits) and passes non-JSON responses (TTS audio, SRT/VTT transcripts) through as bytes. A transcription requested as plain text carries no duration, so it is logged with `pricing_status = 'unknown'` and unbilled: ask for `json` or `verbose_json` to be billed. Realtime (WebSocket) endpoints are not proxied. A provider whose credential is missing answers `503 provider_not_configured` instead of failing upstream.
 
 Streaming works for OpenAI, Anthropic, and Perplexity: send `stream: true` exactly as you would to the provider. The response carries `X-Call-ID` up front; cost is settled and deducted after the last event.
 

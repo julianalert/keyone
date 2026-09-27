@@ -61,7 +61,9 @@ export async function evaluatePolicy(
   caller: ResolvedKey,
   catalogApi: CatalogApi,
   slug: string,
-  body: Record<string, unknown>
+  body: Record<string, unknown>,
+  model: string | null = null,
+  path: string | null = null
 ): Promise<PolicyDecision> {
   const scope = {
     project_id: caller.project_id,
@@ -86,7 +88,7 @@ export async function evaluatePolicy(
 
   // 1b. Allowed models (exact id or prefix match, so dated ids still pass)
   const allowedModels = caller.project.allowed_models
-  const requestedModel = typeof body.model === 'string' ? body.model : null
+  const requestedModel = model ?? (typeof body.model === 'string' ? body.model : null)
   if (allowedModels && allowedModels.length > 0 && requestedModel &&
       !allowedModels.some(m => requestedModel === m || requestedModel.startsWith(m + '-'))) {
     controls.push({ type: 'PROJECT_ALLOWED_MODELS', scope, allowed_models: allowedModels, requested_model: requestedModel })
@@ -94,7 +96,7 @@ export async function evaluatePolicy(
 
   // 2. Budgets, against month-to-date spend plus this call's known price
   const spend = await getSpendSnapshot(supabase, caller.project_id, caller.client_id)
-  const estimate = await estimateCallCost(catalogApi, body)
+  const estimate = await estimateCallCost(catalogApi, body, model, path)
   const projected = estimate ?? 0
 
   const projectBudget = caller.project.monthly_budget_usd

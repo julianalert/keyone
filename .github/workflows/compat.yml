@@ -1,0 +1,25 @@
+name: Compatibility suite
+
+# Real client libraries through the production proxy. Once a day, plus on demand.
+# Each run costs a fraction of a cent per case; keep the cadence low as the catalog grows.
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+jobs:
+  compat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      KEYONE_TEST_BASE_URL: ${{ secrets.KEYONE_TEST_BASE_URL }}
+      KEYONE_TEST_PROJECT_KEY: ${{ secrets.KEYONE_TEST_PROJECT_KEY }}
+      KEYONE_TEST_ADMIN_KEY: ${{ secrets.KEYONE_TEST_ADMIN_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run test:compat

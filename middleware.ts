@@ -47,6 +47,7 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|api/).*)',
+    // Skip static assets, the API, and public SEO files (sitemap, robots, llms.txt, icons, share images)
+    '/((?!_next/static|_next/image|favicon.ico|api/|sitemap.xml|robots.txt|llms.txt|icon|apple-icon|.*opengraph-image).*)',
   ],
 }

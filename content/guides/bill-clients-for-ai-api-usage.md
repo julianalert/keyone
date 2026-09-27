@@ -1,5 +1,6 @@
 ---
 title: "How to Bill Clients for AI API Usage: 4 Models Compared"
+seoTitle: "How to Bill Clients for AI API Usage"
 description: "Compare four ways to bill clients for AI API usage, with a sample invoice, retainer calculation and a clear explanation of markup versus margin."
 published: 2026-09-20
 icon: banknotes

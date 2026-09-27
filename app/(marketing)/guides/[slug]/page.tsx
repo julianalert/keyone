@@ -18,11 +18,14 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
   const guide = getGuide(params.slug)
   if (!guide) return {}
 
-  return pageMetadata({
-    title: guide.title,
+  const metadata = pageMetadata({
+    // Search results show ~60 characters, so prefer the short title there
+    title: guide.seoTitle ?? guide.title,
     description: guide.description,
     path: `/guides/${guide.slug}`,
     openGraph: {
+      // Social cards have room for the full title
+      title: guide.title,
       type: 'article',
       publishedTime: guide.published,
       modifiedTime: guide.updated ?? guide.published,
@@ -30,6 +33,7 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
       section: 'Guides',
     },
   })
+  return { ...metadata, twitter: { ...metadata.twitter, title: guide.title } }
 }
 
 function structuredData(guide: Guide) {

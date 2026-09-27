@@ -1,5 +1,6 @@
 ---
 title: "How to Manage API Keys for Multiple Clients: An Agency Guide"
+seoTitle: "How to Manage API Keys for Multiple Clients"
 description: "Learn how to manage API keys for multiple clients, choose account ownership, organise access and standardise onboarding, rotation and offboarding."
 published: 2026-09-27
 icon: key

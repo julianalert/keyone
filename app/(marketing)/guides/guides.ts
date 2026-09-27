@@ -7,6 +7,7 @@ import { Marked, type Tokens } from 'marked'
  *
  *   ---
  *   title: "…"
+ *   seoTitle: "…"      (optional, shorter title for search results; keep it under ~50 characters)
  *   description: "…"   (meta description, also shown under the title)
  *   published: 2026-09-27
  *   updated: 2026-10-02 (optional)
@@ -25,6 +26,7 @@ const WORDS_PER_MINUTE = 230
 export interface GuideMeta {
   slug: string
   title: string
+  seoTitle?: string
   description: string
   published: string
   updated?: string
@@ -126,6 +128,7 @@ function readGuide(slug: string): Guide {
   return {
     slug,
     title: data.title,
+    seoTitle: data.seoTitle,
     description: data.description,
     published: data.published,
     updated: data.updated,

@@ -5,7 +5,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         {children}
       </div>
       <footer className="py-6 text-center">
-        <p className="text-xs text-ink-subtle">© 2025 key.one · Pure pay-as-you-go</p>
+        <p className="text-xs text-ink-subtle">© {new Date().getFullYear()} keyone · Pure pay-as-you-go</p>
       </footer>
     </div>
   )

@@ -87,6 +87,7 @@ export function SiteFooter() {
       id="footer"
       links={
         <>
+          <FooterLink href="/pricing">Pricing</FooterLink>
           <FooterLink href="/guides">Guides</FooterLink>
           <FooterLink href="/about">About</FooterLink>
           <FooterLink href="/login">Sign in</FooterLink>

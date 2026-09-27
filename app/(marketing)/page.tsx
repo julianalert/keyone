@@ -28,6 +28,8 @@ import { Stat, StatsThreeColumnWithDescription } from '@/components/marketing/se
 import { TestimonialLargeQuote } from '@/components/marketing/sections/testimonial-with-large-quote'
 import { CatalogCard, getCatalog } from './catalog'
 import { faqs } from './faqs'
+import { GuideGrid } from './guides/guide-card'
+import { getAllGuides } from './guides/guides'
 import { FlowIllustration, type ToolGroup } from './flow-illustration'
 import { StartFreeCallToAction } from './start-free-cta'
 import { KeySprawlDemo, StructureDemo } from './demos'
@@ -261,7 +263,7 @@ export default async function HomePage() {
             project with a budget, and invoicing is an export.
           </p>
         }
-        img={<Image src="/clement.jpg" alt="" width={96} height={96} />}
+        img={<Image src="/clement.jpg" alt="Clement Bernard, founder of Visionbds" width={96} height={96} />}
         name="Clement Bernard"
         byline={
           <>
@@ -366,6 +368,20 @@ export default async function HomePage() {
             </div>
           </div>
         </div>
+      </Section>
+
+      {/* Guides */}
+      <Section
+        id="guides"
+        eyebrow="Guides"
+        headline="Learn how agencies run AI for clients."
+        cta={
+          <PlainButtonLink href="/guides" className="self-start">
+            All guides <ArrowNarrowRightIcon />
+          </PlainButtonLink>
+        }
+      >
+        <GuideGrid guides={getAllGuides()} headingLevel="h3" />
       </Section>
 
       {/* FAQs */}

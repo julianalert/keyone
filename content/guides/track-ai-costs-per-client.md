@@ -1,5 +1,6 @@
 ---
 title: "How to Track AI Costs per Client: A Practical Guide for Agencies"
+seoTitle: "How to Track AI Costs per Client"
 description: "Learn how to track AI costs per client across providers, reconcile monthly spend, set budgets and understand what usage means for your agency’s margins."
 published: 2026-09-13
 icon: chart

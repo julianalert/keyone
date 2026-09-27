@@ -42,8 +42,10 @@ export default function PrivacyPage() {
             details; we keep a record of each transaction.
           </li>
           <li>
-            <strong>Technical information:</strong> cookies that keep you signed in, and request counters per key used
-            for rate limiting. We do not use advertising or third-party analytics cookies.
+            <strong>Technical information:</strong> cookies that keep you signed in, fraud-prevention cookies set by
+            Stripe on the payment page, and request counters per key used
+            for rate limiting. We measure page views on our website and dashboard with Simple Analytics, which does not use
+            cookies or collect personal data. We do not use advertising or tracking cookies.
           </li>
         </ul>
 
@@ -63,7 +65,8 @@ export default function PrivacyPage() {
         </p>
         <p>
           <strong>Service providers.</strong> We rely on Supabase (database and authentication), Vercel (hosting),
-          Stripe (payments), Resend (email) and Upstash (rate limiting). The controller agent sends your spend findings,
+          Stripe (payments), Resend (email), Upstash (rate limiting) and Simple Analytics (privacy-first website
+          analytics). The controller agent sends your spend findings,
           including client and project names, to Anthropic to write its daily summary; it does not send your requests.
         </p>
         <p>We do not sell your personal information.</p>

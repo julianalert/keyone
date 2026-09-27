@@ -1,7 +1,10 @@
 import type { Metadata } from 'next'
+import { appUrl } from '@/lib/config'
+import { SiteFooter, SiteNavbar } from './site-chrome'
 import './marketing.css'
 
 export const metadata: Metadata = {
+  metadataBase: new URL(appUrl('https://getkeyone.com')),
   title: 'keyone — One API key for every tool your agents need',
   description: 'Stop juggling API credentials and losing track of costs. One key, one wallet, full visibility across all your agents.',
 }
@@ -18,7 +21,11 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <SiteNavbar />
+        {children}
+        <SiteFooter />
+      </body>
     </html>
   )
 }

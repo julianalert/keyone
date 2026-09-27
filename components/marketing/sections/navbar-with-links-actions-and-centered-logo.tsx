@@ -2,6 +2,7 @@ import { ElDialog, ElDialogPanel } from '../elements/tailwindplus-elements'
 import { clsx } from 'clsx/lite'
 import type { ComponentProps, ReactNode } from 'react'
 import { CloseDialogOnLinkClick } from '../elements/close-dialog-on-link-click'
+import { ChevronIcon } from '../icons/chevron-icon'
 
 export function NavbarLink({
   children,
@@ -24,6 +25,65 @@ export function NavbarLink({
           <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
         </svg>
       </span>
+    </a>
+  )
+}
+
+// A navbar link with a menu that opens on hover or keyboard focus (desktop).
+// In the mobile menu it renders as a plain link.
+export function NavbarDropdown({
+  href,
+  label,
+  eyebrow,
+  children,
+  footer,
+}: {
+  href: string
+  label: ReactNode
+  eyebrow?: ReactNode
+  children: ReactNode
+  footer?: ReactNode
+}) {
+  return (
+    <div className="group/dropdown relative">
+      <NavbarLink href={href} aria-haspopup="true">
+        <span className="inline-flex items-center gap-2">
+          {label}
+          <ChevronIcon className="rotate-90 text-olive-500 transition-transform max-lg:hidden lg:group-focus-within/dropdown:-rotate-90 lg:group-hover/dropdown:-rotate-90" />
+        </span>
+      </NavbarLink>
+      <div className="invisible absolute top-full -left-4 z-20 translate-y-1 pt-3 opacity-0 transition duration-150 max-lg:hidden group-focus-within/dropdown:visible group-focus-within/dropdown:translate-y-0 group-focus-within/dropdown:opacity-100 group-hover/dropdown:visible group-hover/dropdown:translate-y-0 group-hover/dropdown:opacity-100">
+        <div className="w-88 overflow-hidden rounded-xl bg-white shadow-xl ring-1 shadow-olive-950/10 ring-olive-950/5 dark:bg-olive-900 dark:ring-white/10">
+          <div className="h-1 bg-linear-to-r from-brand-green to-brand-lime" />
+          {eyebrow && (
+            <p className="px-5 pt-4 pb-1 text-xs/5 font-semibold tracking-wide text-olive-950 uppercase dark:text-white">
+              {eyebrow}
+            </p>
+          )}
+          <div className="flex flex-col divide-y divide-olive-950/5 px-2 pb-2 dark:divide-white/5">{children}</div>
+          {footer && (
+            <div className="border-t border-olive-950/10 bg-olive-950/2.5 px-5 py-3 dark:border-white/10 dark:bg-white/5">
+              {footer}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export function NavbarDropdownItem({ href, title, icon }: { href: string; title: ReactNode; icon?: ReactNode }) {
+  return (
+    <a
+      href={href}
+      className="group/item flex items-center gap-3 rounded-lg px-3 py-3 transition-colors hover:bg-brand-lime/10"
+    >
+      {icon && (
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-brand-lime/20 text-brand-green transition-colors group-hover/item:bg-brand-green group-hover/item:text-white dark:bg-brand-lime/15 dark:text-brand-lime dark:group-hover/item:bg-brand-lime dark:group-hover/item:text-olive-950">
+          {icon}
+        </span>
+      )}
+      <span className="text-sm/6 font-medium text-olive-950 dark:text-white">{title}</span>
     </a>
   )
 }

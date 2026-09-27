@@ -1,0 +1,8 @@
+// Company details shown on the about, privacy and terms pages.
+
+export const COMPANY_NAME = 'keyone'
+// TODO: add the legal entity (company name, legal form, registered address) once incorporated,
+// and show it in the privacy and terms pages.
+export const LEGAL_ENTITY: string | null = null
+export const CONTACT_EMAIL = 'support@getkeyone.com'
+export const LEGAL_LAST_UPDATED = 'September 27, 2026'

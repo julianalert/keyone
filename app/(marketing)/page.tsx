@@ -42,6 +42,9 @@ import { TestimonialLargeQuote } from '@/components/marketing/sections/testimoni
 import { CatalogCard, getCatalog } from './catalog'
 import { HeroDemo, KeySprawlDemo, KeysDemo, SpendDemo, StructureDemo } from './demos'
 
+// Regenerate hourly so the catalog section picks up changes to catalog_apis
+export const revalidate = 3600
+
 export const metadata: Metadata = {
   title: 'keyone — Stop managing API keys for every client',
   description:

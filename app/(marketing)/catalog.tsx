@@ -15,24 +15,30 @@ export interface CatalogApi {
 }
 
 // Active catalog entries are readable anonymously (RLS: catalog_apis_read).
-// The page is regenerated at most once an hour.
+// Returns [] when the catalog can't be loaded (e.g. env vars missing at build
+// time), so the page still renders; it's regenerated hourly (see page.tsx).
 export async function getCatalog(): Promise<CatalogApi[]> {
-  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-    auth: { persistSession: false },
-    global: { fetch: (input, init) => fetch(input, { ...init, next: { revalidate: 3600 } }) },
-  })
-  const { data, error } = await supabase
-    .from('catalog_apis')
-    .select('name, slug, category, description, pricing_model, price_per_call, price_per_result, icon')
-    .eq('is_active', true)
-    .order('category')
-    .order('name')
-
-  if (error) {
-    console.error('Landing page catalog fetch failed:', error.message)
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!url || !anonKey) {
+    console.warn('Landing page catalog skipped: Supabase env vars are not set')
     return []
   }
-  return data ?? []
+
+  try {
+    const supabase = createClient(url, anonKey, { auth: { persistSession: false } })
+    const { data, error } = await supabase
+      .from('catalog_apis')
+      .select('name, slug, category, description, pricing_model, price_per_call, price_per_result, icon')
+      .eq('is_active', true)
+      .order('category')
+      .order('name')
+    if (error) throw error
+    return data ?? []
+  } catch (error) {
+    console.error('Landing page catalog fetch failed:', error)
+    return []
+  }
 }
 
 const CATEGORY_LABELS: Record<string, string> = {

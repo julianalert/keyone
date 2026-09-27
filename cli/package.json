@@ -2,11 +2,29 @@
   "name": "keyone-cli",
   "version": "0.1.0",
   "description": "Route a codebase's OpenAI, Anthropic and Perplexity calls through key.one: one project key, spend under control.",
-  "bin": { "keyone-cli": "keyone.js" },
-  "files": ["keyone.js", "README.md"],
-  "engines": { "node": ">=18" },
+  "bin": {
+    "keyone-cli": "keyone.js"
+  },
+  "files": [
+    "keyone.js",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
   "license": "MIT",
-  "repository": { "type": "git", "url": "https://github.com/julianalert/keyone.git", "directory": "cli" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/julianalert/keyone.git",
+    "directory": "cli"
+  },
   "homepage": "https://getkeyone.com",
-  "keywords": ["keyone", "openai", "anthropic", "perplexity", "spend", "agents"]
+  "keywords": [
+    "keyone",
+    "openai",
+    "anthropic",
+    "perplexity",
+    "spend",
+    "agents"
+  ]
 }

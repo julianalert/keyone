@@ -2,13 +2,13 @@
 
 export const dynamic = 'force-dynamic'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 
-export default function SignupPage() {
+function SignupForm() {
   const router = useRouter()
   const params = useSearchParams()
   // ?via=agent: the user was sent here by an agent's skill; the account gets a Sandbox project right away
@@ -147,5 +147,14 @@ export default function SignupPage() {
         $3 free credit to start. Then pay only for what you use. No subscription, ever.
       </p>
     </div>
+  )
+}
+
+// useSearchParams needs a Suspense boundary for prerendering
+export default function SignupPage() {
+  return (
+    <Suspense fallback={null}>
+      <SignupForm />
+    </Suspense>
   )
 }

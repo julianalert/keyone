@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/Input'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { KeyRevealModal } from '@/components/keys/KeyRevealModal'
-import { ConnectSnippets } from '@/components/onboarding/ConnectSnippets'
+import { ConnectSnippets, useOrigin } from '@/components/onboarding/ConnectSnippets'
 import { formatUSD, formatDate, formatDateShort } from '@/lib/utils'
 
 interface ProjectKeyRow {
@@ -89,6 +89,8 @@ export default function ProjectDetailPage() {
   const [newKey, setNewKey] = useState<string | null>(null)
   const [keyBusy, setKeyBusy] = useState(false)
   const [requests, setRequests] = useState<BudgetRequestRow[]>([])
+  const origin = useOrigin()
+  const [setupCopied, setSetupCopied] = useState(false)
 
   const fetchData = useCallback(async () => {
     const [projectRes, analyticsRes, timelineRes, catalogRes, requestsRes] = await Promise.all([
@@ -329,6 +331,21 @@ export default function ProjectDetailPage() {
         </div>
       )}
 
+      {/* Connect */}
+      <Card className="mb-6">
+        <div className="px-5 py-4 flex items-center justify-between gap-4 flex-wrap" style={{ borderBottom: '0.5px solid #e0ddd7' }}>
+          <div>
+            <p className="text-sm font-medium text-ink">Connect this project</p>
+            <p className="text-xs text-ink-muted">Paste this into Claude Code or Cursor. The agent installs the key.one skill, asks for this project&apos;s key, and wires it in.</p>
+          </div>
+        </div>
+        <CardContent className="flex items-center gap-3 flex-wrap">
+          <pre className="flex-1 min-w-[16rem] text-sm text-ink font-mono bg-bg rounded-lg px-4 py-3 whitespace-pre-wrap break-all" style={{ border: '0.5px solid #e0ddd7' }}>{`set up ${origin}/skill.md`}</pre>
+          <Button size="sm" onClick={async () => { await navigator.clipboard.writeText(`set up ${origin}/skill.md`); setSetupCopied(true); setTimeout(() => setSetupCopied(false), 1500) }}>{setupCopied ? '✓ Copied' : 'Copy'}</Button>
+          <p className="w-full text-2xs text-ink-subtle">The key itself was shown when it was issued. If it&apos;s gone, use Rotate below to get a new one.</p>
+        </CardContent>
+      </Card>
+
       {/* Keys */}
       <Card className="mb-6">
         <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: '0.5px solid #e0ddd7' }}>
@@ -456,8 +473,8 @@ export default function ProjectDetailPage() {
         {calls.length === 0 ? (
           <div className="px-5 py-6">
             <p className="text-sm text-ink mb-1">No calls yet.</p>
-            <p className="text-xs text-ink-muted mb-4">Point an SDK or agent at key.one with this project&apos;s key. The key was shown once when the project was created; if you don&apos;t have it, use Rotate above to issue a new one.</p>
-            <ConnectSnippets apiKey={activeKeys[0] ? `${activeKeys[0].key_prefix}…` : 'kone_live_…'} projectName={project.name} compact />
+            <p className="text-xs text-ink-muted mb-4">Use the setup line in &ldquo;Connect this project&rdquo; above, or wire an SDK by hand:</p>
+            <ConnectSnippets apiKey={activeKeys[0] ? `${activeKeys[0].key_prefix}…` : 'kone_live_…'} projectName={project.name} manualOnly compact />
           </div>
         ) : (
           <div>

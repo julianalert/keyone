@@ -1,12 +1,33 @@
-import type { Metadata } from 'next'
-import { appUrl } from '@/lib/config'
+import type { Metadata, Viewport } from 'next'
+import { SITE_DESCRIPTION, SITE_NAME, SITE_TAGLINE, SITE_URL, X_HANDLE } from './seo'
 import { SiteFooter, SiteNavbar } from './site-chrome'
 import './marketing.css'
 
 export const metadata: Metadata = {
-  metadataBase: new URL(appUrl('https://getkeyone.com')),
-  title: 'keyone — One API key for every tool your agents need',
-  description: 'Stop juggling API credentials and losing track of costs. One key, one wallet, full visibility across all your agents.',
+  metadataBase: new URL(SITE_URL),
+  title: { default: `${SITE_NAME} | ${SITE_TAGLINE}`, template: `%s | ${SITE_NAME}` },
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  authors: [{ name: 'Julien Devoir', url: 'https://www.linkedin.com/in/juliendevoir/' }],
+  creator: SITE_NAME,
+  publisher: SITE_NAME,
+  robots: { index: true, follow: true, googleBot: { index: true, follow: true, 'max-image-preview': 'large' } },
+  openGraph: {
+    type: 'website',
+    siteName: SITE_NAME,
+    locale: 'en_US',
+    title: `${SITE_NAME} | ${SITE_TAGLINE}`,
+    description: SITE_DESCRIPTION,
+  },
+  twitter: { card: 'summary_large_image', site: X_HANDLE, creator: X_HANDLE },
+  formatDetection: { telephone: false, email: false, address: false },
+}
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#f4f4f0' },
+    { media: '(prefers-color-scheme: dark)', color: '#151511' },
+  ],
 }
 
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {

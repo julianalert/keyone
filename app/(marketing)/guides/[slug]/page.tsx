@@ -3,7 +3,7 @@ import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import { Main } from '@/components/marketing/elements/main'
 import { GuideArticle } from '@/components/marketing/sections/guide-article'
-import { appUrl } from '@/lib/config'
+import { pageMetadata, SITE_URL } from '../../seo'
 import { StartFreeCallToAction } from '../../start-free-cta'
 import { formatGuideDate, getGuide, getGuideSlugs, type Guide } from '../guides'
 
@@ -18,27 +18,22 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
   const guide = getGuide(params.slug)
   if (!guide) return {}
 
-  const path = `/guides/${guide.slug}`
-  return {
-    title: `${guide.title} | keyone`,
+  return pageMetadata({
+    title: guide.title,
     description: guide.description,
-    alternates: { canonical: path },
+    path: `/guides/${guide.slug}`,
     openGraph: {
       type: 'article',
-      url: path,
-      title: guide.title,
-      description: guide.description,
-      siteName: 'keyone',
       publishedTime: guide.published,
       modifiedTime: guide.updated ?? guide.published,
       authors: [guide.author],
+      section: 'Guides',
     },
-    twitter: { card: 'summary', title: guide.title, description: guide.description },
-  }
+  })
 }
 
 function structuredData(guide: Guide) {
-  const site = appUrl('https://getkeyone.com')
+  const site = SITE_URL
   const url = `${site}/guides/${guide.slug}`
   return [
     {

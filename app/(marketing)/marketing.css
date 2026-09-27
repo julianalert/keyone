@@ -38,3 +38,54 @@
     }
   }
 }
+
+/* Flow illustration (flow-illustration.tsx): liquid moving along the pipes */
+@keyframes liquid-flow {
+  to {
+    stroke-dashoffset: -400;
+  }
+}
+@keyframes pill-glow {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  45%,
+  60% {
+    opacity: 1;
+  }
+}
+@keyframes blocked-pulse {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+.liquid {
+  stroke-dasharray: 110 290;
+  animation: liquid-flow 2.6s linear infinite;
+}
+.liquid-highlight {
+  stroke-dasharray: 40 360;
+  animation: liquid-flow 2.6s linear infinite;
+}
+.pill-glow {
+  animation: pill-glow 4.8s ease-in-out infinite;
+}
+.blocked-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: blocked-pulse 1.6s ease-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .liquid,
+  .liquid-highlight,
+  .pill-glow,
+  .blocked-pulse {
+    animation: none;
+  }
+}

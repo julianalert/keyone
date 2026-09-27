@@ -2,12 +2,13 @@ import type { Metadata } from 'next'
 import { Main } from '@/components/marketing/elements/main'
 import { DocumentCentered } from '@/components/marketing/sections/document-centered'
 import { COMPANY_NAME, CONTACT_EMAIL, LEGAL_ENTITY, LEGAL_LAST_UPDATED } from '../company'
+import { pageMetadata } from '../seo'
 
-export const metadata: Metadata = {
-  title: 'Terms & Conditions | keyone',
+export const metadata: Metadata = pageMetadata({
+  title: 'Terms & Conditions',
   description: 'The terms that apply when your agency uses keyone: accounts, the prepaid wallet, acceptable use and liability.',
-  alternates: { canonical: '/terms' },
-}
+  path: '/terms',
+})
 
 export default function TermsPage() {
   const operator = LEGAL_ENTITY ?? COMPANY_NAME

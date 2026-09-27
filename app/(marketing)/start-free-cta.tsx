@@ -1,4 +1,5 @@
 import { ButtonLink } from '@/components/marketing/elements/button'
+import { ArrowNarrowRightIcon } from '@/components/marketing/icons/arrow-narrow-right-icon'
 import { CallToActionCenteredCard } from '@/components/marketing/sections/call-to-action-centered-card'
 
 export function StartFreeCallToAction() {
@@ -7,21 +8,19 @@ export function StartFreeCallToAction() {
       id="call-to-action"
       headline={
         <>
-          Fewer keys to manage.
+          Pick one client.
           <br />
-          <span className="text-brand-lime italic">Every client’s AI spend under control.</span>
+          <span className="text-brand-lime italic">Know what their AI costs.</span>
         </>
       }
-      subheadline={
-        <p>
-          Set up your first client and project in minutes. Your automations keep running, now with budgets and a clean
-          invoice at the end of the month.
-        </p>
-      }
+      subheadline={<p>Connect a project, set its budget, and see its usage in one place.</p>}
       cta={
-        <ButtonLink href="/signup" size="lg" color="light">
-          Start free
-        </ButtonLink>
+        <div className="flex flex-col items-center gap-4">
+          <ButtonLink href="/signup" size="lg" color="light">
+            Start with one client project <ArrowNarrowRightIcon />
+          </ButtonLink>
+          <p className="text-sm/7 text-olive-400">No monthly subscription. Add funds when you’re ready to run.</p>
+        </div>
       }
     />
   )

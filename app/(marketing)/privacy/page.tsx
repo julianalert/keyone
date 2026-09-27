@@ -2,12 +2,13 @@ import type { Metadata } from 'next'
 import { Main } from '@/components/marketing/elements/main'
 import { DocumentCentered } from '@/components/marketing/sections/document-centered'
 import { COMPANY_NAME, CONTACT_EMAIL, LEGAL_ENTITY, LEGAL_LAST_UPDATED } from '../company'
+import { pageMetadata } from '../seo'
 
-export const metadata: Metadata = {
-  title: 'Privacy Policy | keyone',
+export const metadata: Metadata = pageMetadata({
+  title: 'Privacy Policy',
   description: 'What personal data keyone collects, how it is used and shared, and the rights you have over it.',
-  alternates: { canonical: '/privacy' },
-}
+  path: '/privacy',
+})
 
 export default function PrivacyPage() {
   const operator = LEGAL_ENTITY ?? COMPANY_NAME

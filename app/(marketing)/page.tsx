@@ -11,17 +11,16 @@ import { ArrowNarrowRightIcon } from '@/components/marketing/icons/arrow-narrow-
 import { BanknotesIcon } from '@/components/marketing/icons/banknotes-icon'
 import { BellIcon } from '@/components/marketing/icons/bell-icon'
 import { ChartLineIcon } from '@/components/marketing/icons/chart-line-icon'
+import { ChartPieCircleIcon } from '@/components/marketing/icons/chart-pie-circle-icon'
 import { CheckmarkIcon } from '@/components/marketing/icons/checkmark-icon'
 import { DocumentIcon } from '@/components/marketing/icons/document-icon'
 import { KeyIcon } from '@/components/marketing/icons/key-icon'
+import { SlidersIcon } from '@/components/marketing/icons/sliders-icon'
+import { UserArrowRightIcon } from '@/components/marketing/icons/user-arrow-right-icon'
 import { LightingBoltIcon } from '@/components/marketing/icons/lighting-bolt-icon'
 import { RepeatIcon } from '@/components/marketing/icons/repeat-icon'
 import { TerminalIcon } from '@/components/marketing/icons/terminal-icon'
 import { FAQsTwoColumnAccordion, Faq } from '@/components/marketing/sections/faqs-two-column-accordion'
-import {
-  Feature as CoreFeature,
-  FeaturesStackedAlternatingWithDemos,
-} from '@/components/marketing/sections/features-stacked-alternating-with-demos'
 import { Feature, FeaturesThreeColumn } from '@/components/marketing/sections/features-three-column'
 import { FeaturesWithLargeDemo, Feature as ProblemFeature } from '@/components/marketing/sections/features-with-large-demo'
 import { HeroLeftAlignedWithDemo } from '@/components/marketing/sections/hero-left-aligned-with-demo'
@@ -29,17 +28,20 @@ import { Stat, StatsThreeColumnWithDescription } from '@/components/marketing/se
 import { TestimonialLargeQuote } from '@/components/marketing/sections/testimonial-with-large-quote'
 import { CatalogCard, getCatalog } from './catalog'
 import { faqs } from './faqs'
+import { FlowIllustration, type ToolGroup } from './flow-illustration'
 import { StartFreeCallToAction } from './start-free-cta'
-import { HeroDemo, KeySprawlDemo, KeysDemo, SpendDemo, StructureDemo } from './demos'
+import { KeySprawlDemo, StructureDemo } from './demos'
+import { pageMetadata, SITE_DESCRIPTION, SITE_NAME, SITE_TAGLINE, SITE_URL } from './seo'
 
 // Regenerate hourly so the catalog section picks up changes to catalog_apis
 export const revalidate = 3600
 
-export const metadata: Metadata = {
-  title: 'keyone — Stop managing API keys for every client',
-  description:
-    'For AI automation agencies: replace the dozens of provider keys you manage across clients with one account and one key per client project, with spend tracked and capped per client.',
-}
+export const metadata: Metadata = pageMetadata({
+  title: `${SITE_NAME} | ${SITE_TAGLINE}`,
+  absoluteTitle: true,
+  description: SITE_DESCRIPTION,
+  path: '/',
+})
 
 /* ------------------------------------------------------------------ */
 /* Content                                                             */
@@ -69,36 +71,31 @@ const agitations = [
   { stat: '5', text: 'provider dashboards to open when a client asks what their AI actually cost.' },
 ]
 
-const coreFeatures = [
-  {
-    eyebrow: 'Key management',
-    benefit: 'Replace dozens of provider keys with one per client project.',
-    body: 'Your agency stops managing a key per tool per client. Each client project gets one key that works across the whole catalog. Add Perplexity to a client’s workflow next week and nothing changes.',
-    points: [
-      'No provider accounts, cards or keys to set up for each client',
-      'Onboard a client in a minute: create the project, copy the key',
-      'Offboard a client, or rotate a leaked key, without touching anyone else',
-      'Drop-in for the OpenAI and Anthropic SDKs: change the base URL and the key',
-    ],
-    demo: <KeysDemo />,
-    wallpaper: 'green' as const,
-  },
-  {
-    eyebrow: 'Spend management',
-    benefit: 'Know what every client costs your agency, to the cent.',
-    body: 'Every call is stamped with its client, project, tool, and model the moment it happens. No tagging, no month-end reconciliation.',
-    points: [
-      'Live spend per client, per project, per model',
-      'Monthly budgets per client and per project',
-      'Per-call caps and allowed tools and models, checked before the call runs',
-      'Blocked calls return a clear reason your agent can read and explain',
-    ],
-    demo: <SpendDemo />,
-    wallpaper: 'brown' as const,
-  },
-]
-
 const moreFeatures = [
+  {
+    benefit: 'Replace dozens of provider keys with one per client project',
+    feature: 'Key management',
+    body: 'Each client project gets one key that works across the whole catalog. No provider accounts, cards or keys to set up for each client; add Perplexity next week and nothing changes.',
+    icon: <KeyIcon />,
+  },
+  {
+    benefit: 'Onboard or offboard a client in a minute',
+    feature: 'Per-project keys',
+    body: 'Create the project, copy the key. Offboard a client, or rotate a leaked key, without touching anyone else.',
+    icon: <UserArrowRightIcon />,
+  },
+  {
+    benefit: 'Know what every client costs, to the cent',
+    feature: 'Live spend tracking',
+    body: 'Every call is stamped with its client, project, tool and model the moment it happens. Live spend per client, per project and per model, with no tagging or month-end reconciliation.',
+    icon: <ChartPieCircleIcon />,
+  },
+  {
+    benefit: 'Stop overspend before the call runs',
+    feature: 'Budgets and limits',
+    body: 'Monthly budgets per client and per project, per-call caps, and allowed tools and models, all checked before the call runs. Blocked calls return a clear reason your agent can read and explain.',
+    icon: <SlidersIcon />,
+  },
   {
     benefit: 'Sleep through the 2 AM loop',
     feature: 'Spike auto-freeze',
@@ -144,7 +141,7 @@ const moreFeatures = [
   {
     benefit: 'Nothing to rebuild',
     feature: 'Streaming and SDK compatible',
-    body: 'Streaming, tools, and provider headers pass straight through. Your existing code keeps working, now with a budget around it.',
+    body: 'A drop-in for the OpenAI and Anthropic SDKs: change the base URL and the key. Streaming, tools, and provider headers pass straight through, so your existing code keeps working, now with a budget around it.',
     icon: <RepeatIcon />,
   },
 ]
@@ -178,42 +175,79 @@ const fallbackTools = ['OpenAI', 'Anthropic', 'Perplexity', 'Google Maps via Api
 export default async function HomePage() {
   const catalog = await getCatalog()
   const tools = catalog.length > 0 ? catalog.map(api => api.name) : fallbackTools
+  const toolGroups: ToolGroup[] =
+    catalog.length > 0
+      ? [
+          { label: 'AI models', categories: ['ai'] },
+          { label: 'Search', categories: ['search'] },
+          { label: 'Data', categories: ['geo', 'seo', 'social'] },
+        ]
+          .map(g => ({ label: g.label, tools: catalog.filter(api => g.categories.includes(api.category)).map(api => api.name) }))
+          .filter(g => g.tools.length > 0)
+      : [
+          { label: 'AI models', tools: ['OpenAI', 'Anthropic'] },
+          { label: 'Search', tools: ['Perplexity'] },
+          { label: 'Data', tools: ['Google Maps via Apify', 'DataForSEO'] },
+        ]
+
+  const structuredData = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      name: SITE_NAME,
+      url: SITE_URL,
+      description: SITE_DESCRIPTION,
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Organization',
+      name: SITE_NAME,
+      url: SITE_URL,
+      logo: `${SITE_URL}/apple-icon`,
+      sameAs: ['https://x.com/notanothermrktr'],
+    },
+  ]
 
   return (
     <Main>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, '\\u003c') }}
+      />
       {/* Hero */}
       <HeroLeftAlignedWithDemo
         id="hero"
-        eyebrow={<AnnouncementBadge href="#how" text="For AI automation agencies" cta="See how it works" />}
+        eyebrow={<AnnouncementBadge href="#how" text="For agencies running AI for clients" cta="See how it works" />}
         headline={
           <>
-            Stop managing API keys for every client.{' '}
-            <span className="text-brand-green italic dark:text-brand-lime">Know what each one costs you.</span>
+            Know what every client’s <span className="text-brand-green italic dark:text-brand-lime">AI costs.</span>
           </>
         }
         subheadline={
           <p>
-            Your agency runs AI for a dozen clients, on a handful of tools, with a key for every combination. keyone
-            replaces them with one account and one key per client project, then tracks and caps the spend per client.
+            Run every client’s AI through one agency account. See what each one spends, set its budget, and get a clear
+            breakdown, whether you rebill usage or include it in your retainer.
           </p>
         }
         cta={
           <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
               <ButtonLink href="/signup" size="lg">
-                Start free
+                Start with one client project (free)
               </ButtonLink>
               <PlainButtonLink href="#how" size="lg">
                 See how it works <ArrowNarrowRightIcon />
               </PlainButtonLink>
             </div>
-            <p className="text-sm/7 text-olive-500">No provider accounts needed. Set up your first client in minutes.</p>
+            <p className="text-sm/7 text-olive-500">No monthly subscription. Add funds when you’re ready to run.</p>
           </div>
         }
         demo={
-          <Screenshot className="rounded-lg" wallpaper="green" placement="bottom">
-            <HeroDemo />
-          </Screenshot>
+          <Wallpaper color="green" className="rounded-lg p-3 sm:p-8">
+            <div className="overflow-hidden rounded-md bg-olive-50 px-2 py-6 ring-1 ring-black/10 sm:px-6 dark:bg-olive-950">
+              <FlowIllustration groups={toolGroups} />
+            </div>
+          </Wallpaper>
         }
       />
 
@@ -244,7 +278,7 @@ export default async function HomePage() {
       <FeaturesWithLargeDemo
         id="problem"
         eyebrow="The problem"
-        headline="Ten clients in, your agency is managing a key for every tool, for every client."
+        headline="Ten clients, four tools each: forty API keys to manage."
         demo={
           <Screenshot className="rounded-lg" wallpaper="brown" placement="bottom-right">
             <KeySprawlDemo />
@@ -275,7 +309,7 @@ export default async function HomePage() {
       <Section
         id="solution"
         eyebrow="The solution"
-        headline="One account for your agency. One key per client project. Every tool behind it."
+        headline="One account for your agency. Keys & spend, handled."
         subheadline={
           <p>
             keyone sits between your automations and the AI providers. You organize it by client and project, the way
@@ -290,40 +324,10 @@ export default async function HomePage() {
         </Wallpaper>
       </Section>
 
-      {/* Core features */}
-      <FeaturesStackedAlternatingWithDemos
-        id="features"
-        eyebrow="The core"
-        headline="Keys and spend, handled."
-        features={coreFeatures.map(f => (
-          <CoreFeature
-            key={f.eyebrow}
-            headline={f.benefit}
-            subheadline={<p>{f.body}</p>}
-            cta={
-              <ul className="flex flex-col gap-3 text-sm/6 text-olive-950 dark:text-white">
-                {f.points.map(p => (
-                  <li key={p} className="flex items-start gap-3">
-                    <CheckmarkIcon className="mt-1.5 shrink-0 text-brand-green dark:text-brand-lime" />
-                    {p}
-                  </li>
-                ))}
-              </ul>
-            }
-            demo={
-              <Screenshot className="h-full" wallpaper={f.wallpaper} placement="bottom-right">
-                {f.demo}
-              </Screenshot>
-            }
-          />
-        ))}
-      />
-
-      {/* More features */}
+      {/* Features: what the solution does */}
       <FeaturesThreeColumn
-        id="more-features"
-        eyebrow="Everything around it"
-        headline="Built for agencies running AI for other people’s businesses."
+        id="features"
+        className="pt-0"
         features={moreFeatures.map(f => (
           <Feature
             key={f.feature}

@@ -16,23 +16,24 @@ import { SlidersIcon } from '@/components/marketing/icons/sliders-icon'
 import { TerminalIcon } from '@/components/marketing/icons/terminal-icon'
 import { Feature, FeaturesThreeColumn } from '@/components/marketing/sections/features-three-column'
 import { HeroTwoColumnWithPhoto } from '@/components/marketing/sections/hero-two-column-with-photo'
-import { appUrl } from '@/lib/config'
 import { getCatalog } from '../catalog'
 import { CONTACT_EMAIL } from '../company'
 import { faqs } from '../faqs'
 import { StartFreeCallToAction } from '../start-free-cta'
+import { pageMetadata, SITE_URL } from '../seo'
 
 // Regenerate hourly so the catalog names stay current
 export const revalidate = 3600
 
-export const metadata: Metadata = {
-  title: 'About keyone | API keys and AI spend for agencies',
+export const metadata: Metadata = pageMetadata({
+  title: 'About keyone: API keys and AI spend for agencies',
+  absoluteTitle: true,
   description:
     'keyone is an AI spend management platform that gives AI automation agencies one API key per client project, with every client’s spend tracked and capped.',
-  alternates: { canonical: '/about' },
-}
+  path: '/about',
+})
 
-const SITE = appUrl('https://getkeyone.com')
+const SITE = SITE_URL
 
 const founders = [
   {
@@ -178,6 +179,7 @@ function structuredData() {
       '@type': 'Organization',
       name: 'keyone',
       url: SITE,
+      logo: `${SITE}/apple-icon`,
       foundingDate: '2026',
       foundingLocation: { '@type': 'Place', address: { '@type': 'PostalAddress', addressCountry: 'FR' } },
       founder: founders.map(f => ({ '@type': 'Person', name: f.name, jobTitle: f.role })),

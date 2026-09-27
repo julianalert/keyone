@@ -171,7 +171,7 @@ function AgentKeyCard({ project }: { project: FirstRunProject }) {
 }
 
 // The skill line, per agent, with an MCP tab for management
-function SetupCard({ n, origin }: { n: number; origin: string }) {
+export function SetupCard({ n, origin }: { n: number; origin: string }) {
   const [agent, setAgent] = useState<AgentId>('claude-code')
   const [tab, setTab] = useState<'skill' | 'mcp'>('skill')
   const skillUrl = `${origin}/skill.md`
@@ -239,7 +239,7 @@ function KeyCard({ n, project }: { n: number; project: FirstRunProject }) {
   )
 }
 
-const PROMPTS = (origin: string) => [
+export const PROMPTS = (origin: string) => [
   {
     title: 'Connect this codebase',
     text: `Connect this codebase to key.one: ask me for the project key, route its OpenAI and Anthropic calls through key.one, and make a test call. Skill: ${origin}/skill.md`,
@@ -325,7 +325,7 @@ function TryItCard({ n, project, origin }: { n: number; project: FirstRunProject
 
 // ---------------------------------------------------------------- bits
 
-function PromptTile({ title, text }: { title: string; text: string }) {
+export function PromptTile({ title, text }: { title: string; text: string }) {
   const [copied, setCopied] = useState(false)
   async function copy() {
     await navigator.clipboard.writeText(text)

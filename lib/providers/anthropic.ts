@@ -21,7 +21,9 @@ function fromUsage(u: AnthropicUsage | undefined, prev?: TokenUsage): TokenUsage
 export const anthropic: ProviderAdapter = {
   id: 'anthropic',
 
-  buildUrl: (api, path) => (path ? `${new URL(api.base_url).origin}/${path}` : api.base_url),
+  // SDK-style paths: some clients send "v1/messages", others just "messages"
+  // (the Vercel AI SDK's Anthropic provider, for one). Both must reach /v1/….
+  buildUrl: (api, path) => (path ? `${new URL(api.base_url).origin}/${path.startsWith('v1/') ? path : `v1/${path}`}` : api.base_url),
   buildHeaders: (_api, incoming) => {
     const h: Record<string, string> = {
       'Content-Type': 'application/json',

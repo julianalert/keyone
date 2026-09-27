@@ -133,6 +133,12 @@ Response headers include:
 - `X-Project-ID`, `X-Client-ID` — where the spend was attributed
 - `X-Tokens-Used` — `{input}+{output}` for LLM calls
 
+## Compatibility suite
+
+`npm run test:compat` sends real traffic through the proxy with the client libraries customers use and checks the call log after each one: OpenAI's SDK on Chat Completions and the Responses API (buffered, streamed, tool calls), Anthropic's SDK (buffered, streamed, tools, adaptive thinking), the Vercel AI SDK on both providers (generateText, streamText, tools), LangChain on both, model shortcuts, provider errors, the allowed-models control, and a bad key. Each case must return a valid response for that library and leave a completed, priced row in the log.
+
+It needs `KEYONE_TEST_BASE_URL`, `KEYONE_TEST_PROJECT_KEY` (a key on a throwaway project) and `KEYONE_TEST_ADMIN_KEY` (an agency key of the same agency), from `.env.test.local` locally or repository secrets in CI. `.github/workflows/compat.yml` runs it after every push to `main` (waiting for that commit to be live via `/api/health`), every six hours, and on demand. A full run costs a fraction of a cent.
+
 ## Onboarding
 
 A new agency lands on a four-step first run instead of an empty overview: create a client, create a project (the key is minted), copy a connect snippet with the key and domain filled in, send a test call and see the cost land on the client. A "Getting started" checklist stays on the overview until the four milestones (project, first call, budget, agent connected) are met, derived from data, dismissable. A welcome email goes out through Resend on the first dashboard visit. Confirmation and invite links pass through `/auth/callback`, which exchanges the code for a session server-side.

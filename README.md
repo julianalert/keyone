@@ -144,7 +144,16 @@ It needs `KEYONE_TEST_BASE_URL`, `KEYONE_TEST_PROJECT_KEY` (a key on a throwaway
 
 ## Onboarding
 
-A new agency lands on a four-step first run instead of an empty overview: create a client, create a project (the key is minted), copy a connect snippet with the key and domain filled in, send a test call and see the cost land on the client. A "Getting started" checklist stays on the overview until the four milestones (project, first call, budget, agent connected) are met, derived from data, dismissable. A welcome email goes out through Resend on the first dashboard visit. Confirmation and invite links pass through `/auth/callback`, which exchanges the code for a session server-side.
+`/onboarding` is the welcome screen, modelled on the simplest agent products: **1** a client and a project, **2** "Set up your Claude Code / Cursor / Codex" with a Skill tab (`set up https://your-domain.com/skill.md`) and an MCP tab, **3** the project key (masked, Show, Copy, Manage), **4** "Try it out" with premade prompts to paste into the agent and a live "waiting for your first call" indicator that turns green with the model and cost when a real call lands. A "Getting started" checklist stays on the overview until the milestones are met. A welcome email goes out through Resend on the first dashboard visit.
+
+Two paths, one screen (`agencies.onboarding_source`):
+
+- **Human**: signs up on the site, names a real client and project first, then gets the cards.
+- **Agent**: an agent starts the signup with `POST /api/agent/signup {email, agent}`. The user gets a one-click approval email (Resend, magic link via `auth.admin.generateLink`), the click lands on `/auth/callback?token_hash=…` then `/onboarding?claim=…`, which creates a **Sandbox / Default** project capped at $10 a month, mints a key and parks it on the claim. The agent polls `GET /api/agent/signup/:token` (every 5 s, 30-minute expiry) and receives the key exactly once, with the env variables to write. The key never goes through a chat. `/signup?via=agent` does the same for a user the agent sent to the site by hand: the sandbox is created on signup and its key shown on the welcome screen. Migration 017 adds `agent_claims` and the source column.
+
+### Installer: `npx keyone-cli setup`
+
+`cli/keyone.js` is a dependency-free Node script (also served at `/setup.js` for hosts without npm: `curl -fsSL https://your-domain.com/setup.js | node - setup`). It takes the project key from `--key`, `KEYONE_API_KEY`, the env file, the clipboard or a hidden prompt, never prints it, writes the four `KEYONE_*` variables to `.env.local` or `.env`, git-ignores the file, lists the names in `.env.example`, detects the SDKs in `package.json` / `requirements.txt`, and with `--apply` rewires the constructor calls it recognises (`new OpenAI(…)`, `new Anthropic(…)`, `createOpenAI`, `createAnthropic`, `ChatOpenAI`, `ChatAnthropic`, and the Python `OpenAI()` / `Anthropic()` / LangChain equivalents), leaving anything with a base URL already set alone. It ends with one test call on `cheapest` and prints the cost and the client / project it landed on. The skill's Setup section tells agents to run it, so the agent path is deterministic too. Publish from `cli/` with `npm publish` (name `keyone-cli`).
 
 ## Team
 

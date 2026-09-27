@@ -4,12 +4,15 @@ export const dynamic = 'force-dynamic'
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 
 export default function SignupPage() {
   const router = useRouter()
+  const params = useSearchParams()
+  // ?via=agent: the user was sent here by an agent's skill; the account gets a Sandbox project right away
+  const via = params.get('via') === 'agent' ? 'agent' : 'human'
   const [agencyName, setAgencyName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -29,8 +32,8 @@ export default function SignupPage() {
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
-        data: { agency_name: agencyName.trim() },
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=${via === 'agent' ? '/onboarding' : '/dashboard'}`,
+        data: { agency_name: agencyName.trim(), via },
       },
     })
 
@@ -42,7 +45,7 @@ export default function SignupPage() {
 
     // Email confirmation disabled: Supabase returns a session right away
     if (data.session) {
-      router.push('/dashboard')
+      router.push(via === 'agent' ? '/onboarding' : '/dashboard')
       router.refresh()
       return
     }

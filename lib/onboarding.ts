@@ -79,3 +79,61 @@ export async function sendWelcomeIfNeeded(supabase: SupabaseClient, agencyId: st
     return false
   }
 }
+
+// ------------------------------------------------------------
+// Agent path: a Sandbox client with a Default project, so an agent can
+// start spending (within a small budget) before the human names real clients.
+// ------------------------------------------------------------
+export const SANDBOX_CLIENT = 'Sandbox'
+export const SANDBOX_PROJECT = 'Default'
+export const SANDBOX_BUDGET_USD = 10
+
+export interface Sandbox {
+  client_id: string
+  client_name: string
+  project_id: string
+  project_name: string
+  api_key: string          // freshly minted, shown once
+  created: boolean         // false when the sandbox already existed (a new key was still minted)
+}
+
+// Idempotent on the client and project; always mints a new key, because a
+// key can only be handed out at the moment it is created.
+export async function ensureSandbox(service: SupabaseClient, agencyId: string): Promise<Sandbox> {
+  const { generateProjectKey } = await import('@/lib/keys')
+  let created = false
+
+  let { data: client } = await service
+    .from('clients').select('id, name').eq('agency_id', agencyId).eq('name', SANDBOX_CLIENT).is('is_active', true).maybeSingle()
+  if (!client) {
+    const { data: any } = await service.from('clients').select('id, name').eq('agency_id', agencyId).eq('name', SANDBOX_CLIENT).maybeSingle()
+    client = any
+  }
+  if (!client) {
+    const { data, error } = await service
+      .from('clients').insert({ agency_id: agencyId, name: SANDBOX_CLIENT }).select('id, name').single()
+    if (error || !data) throw new Error(error?.message ?? 'Could not create the sandbox client')
+    client = data
+    created = true
+  }
+
+  let { data: project } = await service
+    .from('projects').select('id, name').eq('client_id', client.id).eq('name', SANDBOX_PROJECT).maybeSingle()
+  if (!project) {
+    const { data, error } = await service
+      .from('projects')
+      .insert({ agency_id: agencyId, client_id: client.id, name: SANDBOX_PROJECT, monthly_budget_usd: SANDBOX_BUDGET_USD })
+      .select('id, name').single()
+    if (error || !data) throw new Error(error?.message ?? 'Could not create the sandbox project')
+    project = data
+    created = true
+  }
+
+  const key = generateProjectKey()
+  const { error: keyError } = await service.from('project_keys').insert({
+    project_id: project.id, agency_id: agencyId, name: 'agent', key_hash: key.hash, key_prefix: key.prefix,
+  })
+  if (keyError) throw new Error(keyError.message)
+
+  return { client_id: client.id, client_name: client.name, project_id: project.id, project_name: project.name, api_key: key.plaintext, created }
+}

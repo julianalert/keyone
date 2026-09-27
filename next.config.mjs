@@ -7,6 +7,7 @@ const nextConfig = {
     // make sure the Markdown files ship with every serverless function.
     outputFileTracingIncludes: {
       '/**': ['./content/guides/**/*'],
+      '/setup.js': ['./cli/keyone.js'],
     },
   },
 }

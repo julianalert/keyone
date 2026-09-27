@@ -7,7 +7,7 @@ export async function GET(req: Request) {
   const origin = appUrl(new URL(req.url).origin)
   const body = `---
 name: keyone
-version: 0.9.3
+version: 0.10.0
 description: >-
   key.one is spend management for AI agents. One key per client project
   works for every AI model and tool in the catalog, with budgets enforced
@@ -34,25 +34,53 @@ Two kinds of key:
 
 ## Setup (run this when the user installs the skill)
 
-The user has a key.one **project key** from the key.one dashboard. Do this, in order:
+Goal: this codebase's AI calls go through key.one with a **project key**, and the key never
+appears in the chat. Two situations:
 
-1. Ask the user to paste the project key (it starts with \`kone_live_\`). Never guess it and
-   never log it anywhere but the env file.
-2. Write it to the project's local env file together with the base URLs:
+**A. The user already has a project key** (they created a project in the key.one dashboard):
+
+1. Ask the user to paste the key into the terminal prompt of the installer, not into the chat.
+   Run, in the project root:
+   \`\`\`
+   npx keyone-cli setup --apply
+   \`\`\`
+   (No npm? \`curl -fsSL ${origin}/setup.js | node - setup --apply\`.) It asks for the key with a
+   hidden prompt (or takes it from the clipboard), writes \`KEYONE_API_KEY\` and the base URLs to
+   the env file, git-ignores it, rewires the OpenAI / Anthropic / Vercel AI SDK / LangChain
+   constructor calls it recognises, and makes one test call. Read its output: it lists every
+   file it changed and anything it left for you to edit by hand.
+2. If the installer cannot run (no Node, no network), do the same by hand: write
    \`\`\`
    KEYONE_API_KEY=<the key>
    KEYONE_OPENAI_BASE_URL=${origin}/api/proxy/openai/v1
    KEYONE_ANTHROPIC_BASE_URL=${origin}/api/proxy/anthropic
    KEYONE_PERPLEXITY_BASE_URL=${origin}/api/proxy/perplexity
    \`\`\`
-   Make sure the env file is git-ignored. Add the names (no values) to \`.env.example\` if one exists.
-3. Find every place the codebase calls OpenAI, Anthropic or Perplexity: official SDKs, the Vercel AI SDK
-   (\`createOpenAI\` / \`createAnthropic\` with \`baseURL\` and \`apiKey\`), LangChain, or raw fetch.
-   Only touch the providers actually used. Point each one at key.one: \`KEYONE_API_KEY\` as the API
-   key and the matching base URL. Keep an existing provider key as a fallback if one is wired in.
-4. Run one small test call with model \`cheapest\` and show the user the reply and the
-   \`X-Cost-USD\` response header. That confirms the key, the budget check, and the attribution.
-5. Tell the user: production hosts (Vercel etc.) need the same variables set by hand.
+   to the git-ignored env file, then point every OpenAI, Anthropic or Perplexity client at the
+   matching base URL with \`KEYONE_API_KEY\` as the API key, and make one small call with model
+   \`cheapest\`. Show the user the reply and the \`X-Cost-USD\` header.
+3. Tell the user: production hosts (Vercel etc.) need the same variables set by hand.
+
+**B. The user has no key.one account yet.** You can start the signup; the user approves it with
+one click and you collect the key yourself:
+
+1. Ask for the user's email. Then:
+   \`\`\`bash
+   curl -X POST ${origin}/api/agent/signup -H "Content-Type: application/json" \\
+     -d '{"email":"<email>","agent":"Claude Code"}'
+   \`\`\`
+   The response has \`poll_url\` and \`claim_token\`. Tell the user to click the approval link in
+   the email. It creates their account (or signs them in) with a **Sandbox / Default** project
+   capped at $10 a month and $3 of free credit.
+2. Poll \`GET poll_url\` every 5 seconds, up to 15 minutes. \`"status": "pending"\` means not yet
+   clicked; \`"ready"\` comes with \`env\` (the four variables above, key included) exactly once.
+   Write them straight to the env file. Never print the key or put it in the chat.
+3. Run \`npx keyone-cli setup --apply\` (it reads the key from the env file) and continue as in A.
+   If you only need tools for yourself and there is no codebase to rewire, skip the installer:
+   the env file is enough, use the base URLs below.
+
+Rather send the user to the site? \`${origin}/signup?via=agent\` creates the sandbox on signup and
+shows the key on the welcome screen for them to give you.
 
 ## Calling models with a project key
 

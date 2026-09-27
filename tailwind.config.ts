@@ -5,6 +5,9 @@ const config: Config = {
     './pages/**/*.{js,ts,jsx,tsx,mdx}',
     './components/**/*.{js,ts,jsx,tsx,mdx}',
     './app/**/*.{js,ts,jsx,tsx,mdx}',
+    // The marketing site has its own Tailwind v4 stylesheet (see postcss-tailwind.cjs)
+    '!./app/[(]marketing[)]/**',
+    '!./components/marketing/**',
   ],
   theme: {
     extend: {

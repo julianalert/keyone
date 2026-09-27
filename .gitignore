@@ -35,3 +35,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .env.test.local
+
+# Tailwind Plus kit source (licensed, not for a public repo)
+/ui-kit-marketing-website

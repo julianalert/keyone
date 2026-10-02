@@ -107,8 +107,6 @@ export function SiteNavbar() {
 }
 
 export function SiteFooter() {
-  const guides = getAllGuides()
-
   return (
     <FooterWithNewsletterFormCategoriesAndSocialIcons
       id="footer"
@@ -138,17 +136,19 @@ export function SiteFooter() {
             <FooterLink href="/catalog">Catalog</FooterLink>
             <FooterLink href="/pricing">Pricing</FooterLink>
           </FooterCategory>
-          <FooterCategory title="Guides">
-            {guides.map(guide => (
-              <FooterLink key={guide.slug} href={`/guides/${guide.slug}`}>
-                {(guide.seoTitle ?? guide.title).replace(/^How to /, '').replace(/^./, c => c.toUpperCase())}
-              </FooterLink>
-            ))}
-            <FooterLink href="/guides">All guides</FooterLink>
+          <FooterCategory title="Resources">
+            <FooterLink href="/guides">Guides</FooterLink>
+            <FooterLink href="/blog">Blog</FooterLink>
+            {/* Not a link yet: the page doesn't exist */}
+            <li className="flex flex-wrap items-center gap-x-2 text-olive-500 dark:text-olive-500">
+              <span className="whitespace-nowrap">Customer Stories</span>
+              <span className="rounded-full bg-olive-950/5 px-2 text-xs/5 font-medium whitespace-nowrap text-olive-600 dark:bg-white/10 dark:text-olive-400">
+                Coming soon
+              </span>
+            </li>
           </FooterCategory>
           <FooterCategory title="Company">
             <FooterLink href="/about">About</FooterLink>
-            <FooterLink href="/blog">Blog</FooterLink>
             <FooterLink href="/careers">Careers</FooterLink>
             <FooterLink href="/docs">For developers</FooterLink>
             <FooterLink href="/login">Sign in</FooterLink>

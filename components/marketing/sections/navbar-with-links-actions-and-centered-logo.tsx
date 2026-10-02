@@ -37,12 +37,15 @@ export function NavbarDropdown({
   eyebrow,
   children,
   footer,
+  mobileLinks,
 }: {
   href: string
   label: ReactNode
   eyebrow?: ReactNode
   children: ReactNode
   footer?: ReactNode
+  // Shown under the label in the mobile menu, where there is no hover panel
+  mobileLinks?: { href: string; label: ReactNode }[]
 }) {
   return (
     <div className="group/dropdown relative">
@@ -52,6 +55,17 @@ export function NavbarDropdown({
           <ChevronIcon className="rotate-90 text-olive-500 transition-transform max-lg:hidden lg:group-focus-within/dropdown:-rotate-90 lg:group-hover/dropdown:-rotate-90" />
         </span>
       </NavbarLink>
+      {mobileLinks && (
+        <ul className="mt-3 flex flex-col gap-2 border-l border-olive-950/10 pl-4 lg:hidden dark:border-white/10">
+          {mobileLinks.map(link => (
+            <li key={link.href}>
+              <a href={link.href} className="text-lg/8 text-olive-700 dark:text-olive-400">
+                {link.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
       <div className="invisible absolute top-full -left-4 z-20 translate-y-1 pt-3 opacity-0 transition duration-150 max-lg:hidden group-focus-within/dropdown:visible group-focus-within/dropdown:translate-y-0 group-focus-within/dropdown:opacity-100 group-hover/dropdown:visible group-hover/dropdown:translate-y-0 group-hover/dropdown:opacity-100">
         <div className="w-88 overflow-hidden rounded-xl bg-white shadow-xl ring-1 shadow-olive-950/10 ring-olive-950/5 dark:bg-olive-900 dark:ring-white/10">
           <div className="h-1 bg-linear-to-r from-brand-green to-brand-lime" />
@@ -72,7 +86,17 @@ export function NavbarDropdown({
   )
 }
 
-export function NavbarDropdownItem({ href, title, icon }: { href: string; title: ReactNode; icon?: ReactNode }) {
+export function NavbarDropdownItem({
+  href,
+  title,
+  description,
+  icon,
+}: {
+  href: string
+  title: ReactNode
+  description?: ReactNode
+  icon?: ReactNode
+}) {
   return (
     <a
       href={href}
@@ -83,7 +107,10 @@ export function NavbarDropdownItem({ href, title, icon }: { href: string; title:
           {icon}
         </span>
       )}
-      <span className="text-sm/6 font-medium text-olive-950 dark:text-white">{title}</span>
+      <span className="flex flex-col">
+        <span className="text-sm/6 font-medium text-olive-950 dark:text-white">{title}</span>
+        {description && <span className="text-xs/5 text-olive-600 dark:text-olive-400">{description}</span>}
+      </span>
     </a>
   )
 }

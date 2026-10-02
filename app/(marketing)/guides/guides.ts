@@ -20,7 +20,7 @@ import { Marked, type Tokens } from 'marked'
  * Every `##` heading becomes an entry in the "On this page" menu.
  */
 
-const GUIDES_DIR = path.join(process.cwd(), 'content', 'guides')
+const CONTENT_DIR = path.join(process.cwd(), 'content')
 const WORDS_PER_MINUTE = 230
 
 export interface GuideMeta {
@@ -32,6 +32,7 @@ export interface GuideMeta {
   updated?: string
   icon?: string
   author: string
+  authorRole?: string
   authorImage?: string
   readingMinutes: number
 }
@@ -46,7 +47,8 @@ export interface Guide extends GuideMeta {
   toc: TocEntry[]
 }
 
-function parseFrontmatter(source: string, file: string) {
+// Also used by the docs page
+export function parseFrontmatter(source: string, file: string, required = ['title', 'description', 'published']) {
   const match = source.match(/^---\n([\s\S]*?)\n---\n?/)
   if (!match) throw new Error(`Guide ${file} is missing its frontmatter block`)
 
@@ -55,7 +57,7 @@ function parseFrontmatter(source: string, file: string) {
     const field = line.match(/^(\w+):\s*(.*)$/)
     if (field) data[field[1]] = field[2].trim().replace(/^"(.*)"$/, '$1')
   }
-  for (const key of ['title', 'description', 'published']) {
+  for (const key of required) {
     if (!data[key]) throw new Error(`Guide ${file} is missing "${key}" in its frontmatter`)
   }
   return { data, body: source.slice(match[0].length) }
@@ -77,7 +79,7 @@ function stripInline(text: string) {
   return text.replace(/\*\*|__|`/g, '').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
 }
 
-function renderMarkdown(body: string) {
+export function renderMarkdown(body: string) {
   const toc: TocEntry[] = []
   const usedIds = new Set<string>()
 
@@ -119,49 +121,60 @@ function renderMarkdown(body: string) {
   return { html, toc }
 }
 
-function readGuide(slug: string): Guide {
-  const file = `${slug}.md`
-  const { data, body } = parseFrontmatter(fs.readFileSync(path.join(GUIDES_DIR, file), 'utf8'), file)
-  const { html, toc } = renderMarkdown(body)
-  const words = body.split(/\s+/).filter(Boolean).length
+// A folder of Markdown files under content/ (guides, blog posts): slugs, one entry, or all of them.
+export function createCollection(folder: string) {
+  const dir = path.join(CONTENT_DIR, folder)
+
+  function read(slug: string): Guide {
+    const file = `${slug}.md`
+    const { data, body } = parseFrontmatter(fs.readFileSync(path.join(dir, file), 'utf8'), `${folder}/${file}`)
+    const { html, toc } = renderMarkdown(body)
+    const words = body.split(/\s+/).filter(Boolean).length
+
+    return {
+      slug,
+      title: data.title,
+      seoTitle: data.seoTitle,
+      description: data.description,
+      published: data.published,
+      updated: data.updated,
+      icon: data.icon,
+      author: data.author || 'Keyone',
+      authorRole: data.authorRole,
+      authorImage: data.authorImage,
+      readingMinutes: Math.max(1, Math.round(words / WORDS_PER_MINUTE)),
+      html,
+      toc,
+    }
+  }
+
+  function slugs(): string[] {
+    if (!fs.existsSync(dir)) return []
+    return fs
+      .readdirSync(dir)
+      .filter(f => f.endsWith('.md'))
+      .map(f => f.replace(/\.md$/, ''))
+  }
 
   return {
-    slug,
-    title: data.title,
-    seoTitle: data.seoTitle,
-    description: data.description,
-    published: data.published,
-    updated: data.updated,
-    icon: data.icon,
-    author: data.author || 'Keyone',
-    authorImage: data.authorImage,
-    readingMinutes: Math.max(1, Math.round(words / WORDS_PER_MINUTE)),
-    html,
-    toc,
+    slugs,
+    get: (slug: string): Guide | null => (slugs().includes(slug) ? read(slug) : null),
+    // Newest first
+    all: (): GuideMeta[] =>
+      slugs()
+        .map(slug => {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { html, toc, ...meta } = read(slug)
+          return meta
+        })
+        .sort((a, b) => b.published.localeCompare(a.published)),
   }
 }
 
-export function getGuideSlugs(): string[] {
-  return fs
-    .readdirSync(GUIDES_DIR)
-    .filter(f => f.endsWith('.md'))
-    .map(f => f.replace(/\.md$/, ''))
-}
-
-export function getGuide(slug: string): Guide | null {
-  return getGuideSlugs().includes(slug) ? readGuide(slug) : null
-}
-
-// Newest first
-export function getAllGuides(): GuideMeta[] {
-  return getGuideSlugs()
-    .map(slug => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { html, toc, ...meta } = readGuide(slug)
-      return meta
-    })
-    .sort((a, b) => b.published.localeCompare(a.published))
-}
+const guides = createCollection('guides')
+export const getGuideSlugs = guides.slugs
+export const getGuide = guides.get
+export const getAllGuides = guides.all
 
 export function formatGuideDate(date: string) {
   return new Date(`${date}T00:00:00Z`).toLocaleDateString('en-US', {

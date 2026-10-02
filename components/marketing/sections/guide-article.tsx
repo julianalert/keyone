@@ -16,6 +16,7 @@ export function GuideArticle({
   subheadline,
   meta,
   toc,
+  lead,
   html,
   className,
   ...props
@@ -26,6 +27,8 @@ export function GuideArticle({
   subheadline?: ReactNode
   meta?: ReactNode
   toc: TocItem[]
+  // Shown above the article body, in the reading column (e.g. a highlighted callout)
+  lead?: ReactNode
   html: string
 } & ComponentProps<'article'>) {
   return (
@@ -87,6 +90,7 @@ export function GuideArticle({
               </details>
             )}
 
+            {lead && <div className="mb-12">{lead}</div>}
             <ArticleProse dangerouslySetInnerHTML={{ __html: html }} />
           </div>
         </div>

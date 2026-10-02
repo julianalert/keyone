@@ -3,11 +3,20 @@ import { ArrowNarrowRightIcon } from '@/components/marketing/icons/arrow-narrow-
 import { formatGuideDate, type GuideMeta } from './guides'
 
 // Card linking to a guide: date, reading time, title, description and author.
-export function GuideCard({ guide, headingLevel = 'h2' }: { guide: GuideMeta; headingLevel?: 'h2' | 'h3' }) {
+export function GuideCard({
+  guide,
+  headingLevel = 'h2',
+  basePath = '/guides',
+}: {
+  guide: GuideMeta
+  headingLevel?: 'h2' | 'h3'
+  // Where the entry lives: '/guides' or '/blog'
+  basePath?: string
+}) {
   const Heading = headingLevel
   return (
     <a
-      href={`/guides/${guide.slug}`}
+      href={`${basePath}/${guide.slug}`}
       className="group flex flex-1 flex-col gap-4 rounded-xl bg-white p-6 ring-1 ring-olive-950/5 transition-shadow hover:shadow-lg hover:shadow-olive-950/5 dark:bg-white/5 dark:ring-white/10"
     >
       <p className="text-sm/6 text-olive-500">
@@ -46,12 +55,20 @@ export function GuideCard({ guide, headingLevel = 'h2' }: { guide: GuideMeta; he
   )
 }
 
-export function GuideGrid({ guides, headingLevel }: { guides: GuideMeta[]; headingLevel?: 'h2' | 'h3' }) {
+export function GuideGrid({
+  guides,
+  headingLevel,
+  basePath,
+}: {
+  guides: GuideMeta[]
+  headingLevel?: 'h2' | 'h3'
+  basePath?: string
+}) {
   return (
     <ul className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3">
       {guides.map(guide => (
         <li key={guide.slug} className="flex">
-          <GuideCard guide={guide} headingLevel={headingLevel} />
+          <GuideCard guide={guide} headingLevel={headingLevel} basePath={basePath} />
         </li>
       ))}
     </ul>

@@ -9,8 +9,8 @@ export const SITE_TAGLINE = 'Know what every client’s AI costs'
 export const SITE_DESCRIPTION =
   'Run every client’s AI through one agency account. See what each client spends, set budgets, and get a clear breakdown to rebill or include in your retainer.'
 export const X_HANDLE = '@notanothermrktr'
-// Last meaningful content change to the home and about pages (for the sitemap); bump when they change
-export const PAGES_LAST_UPDATED = '2026-09-27'
+// Last meaningful content change to the home, product, catalog, pricing and about pages (for the sitemap); bump when they change
+export const PAGES_LAST_UPDATED = '2026-10-02'
 
 // Per-page metadata: canonical URL plus matching Open Graph and X (Twitter) tags.
 // Share images come from the opengraph-image.tsx files next to each route.

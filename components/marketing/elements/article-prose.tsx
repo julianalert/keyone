@@ -19,6 +19,9 @@ export function ArticleProse({ className, ...props }: ComponentProps<'div'>) {
         '[&_strong]:font-semibold [&_strong]:text-olive-950 dark:[&_strong]:text-white',
         '[&_a]:font-medium [&_a]:text-olive-950 [&_a]:underline [&_a]:decoration-brand-lime [&_a]:decoration-2 [&_a]:underline-offset-4 hover:[&_a]:decoration-brand-green dark:[&_a]:text-white',
         '[&_code]:rounded-sm [&_code]:bg-olive-950/5 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-[0.85em] [&_code]:text-olive-950 dark:[&_code]:bg-white/10 dark:[&_code]:text-white',
+        // Code blocks
+        '[&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-olive-950 [&_pre]:p-5 [&_pre]:text-sm/6 [&_pre]:text-[#c0dd97] dark:[&_pre]:ring-1 dark:[&_pre]:ring-white/10',
+        '[&_pre_code]:rounded-none [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_pre_code]:text-[1em] [&_pre_code]:text-inherit dark:[&_pre_code]:bg-transparent',
         // Lists
         '[&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:list-disc [&_ul]:pl-6 [&_li]:pl-2 [&_li+li]:mt-3 [&_li]:marker:text-olive-400',
         // Checklists (<ul class="checklist">, from Markdown task lists)

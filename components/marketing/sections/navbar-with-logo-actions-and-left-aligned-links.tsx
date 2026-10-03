@@ -119,7 +119,7 @@ export function NavbarLogo({ className, href, ...props }: { href: string } & Omi
   return <a href={href} {...props} className={clsx('inline-flex items-stretch', className)} />
 }
 
-export function NavbarWithLinksActionsAndCenteredLogo({
+export function NavbarWithLogoActionsAndLeftAlignedLinks({
   links,
   logo,
   actions,
@@ -135,8 +135,10 @@ export function NavbarWithLinksActionsAndCenteredLogo({
       <style>{`:root { --scroll-padding-top: 5.25rem }`}</style>
       <nav>
         <div className="mx-auto flex h-(--scroll-padding-top) max-w-7xl items-center gap-4 px-6 lg:px-10">
-          <div className="flex flex-1 gap-8 max-lg:hidden">{links}</div>
-          <div className="flex items-center">{logo}</div>
+          <div className="flex flex-1 items-center gap-12">
+            <div className="flex items-center">{logo}</div>
+            <div className="flex gap-8 max-lg:hidden">{links}</div>
+          </div>
           <div className="flex flex-1 items-center justify-end gap-4">
             <div className="flex shrink-0 items-center gap-5">{actions}</div>
 

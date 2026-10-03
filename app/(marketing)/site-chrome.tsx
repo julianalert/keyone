@@ -1,6 +1,7 @@
 import { ButtonLink, PlainButtonLink } from '@/components/marketing/elements/button'
 import { ArrowNarrowRightIcon } from '@/components/marketing/icons/arrow-narrow-right-icon'
 import { BanknotesIcon } from '@/components/marketing/icons/banknotes-icon'
+import { Building2Icon } from '@/components/marketing/icons/building-2-icon'
 import { ChartLineIcon } from '@/components/marketing/icons/chart-line-icon'
 import { DocumentIcon } from '@/components/marketing/icons/document-icon'
 import { KeyIcon } from '@/components/marketing/icons/key-icon'
@@ -16,8 +17,9 @@ import {
   NavbarDropdownItem,
   NavbarLink,
   NavbarLogo,
-  NavbarWithLinksActionsAndCenteredLogo,
-} from '@/components/marketing/sections/navbar-with-links-actions-and-centered-logo'
+  NavbarWithLogoActionsAndLeftAlignedLinks,
+} from '@/components/marketing/sections/navbar-with-logo-actions-and-left-aligned-links'
+import { getAllStories } from './customers/stories'
 import { getAllGuides } from './guides/guides'
 import { productPages } from './product/pages'
 
@@ -36,9 +38,10 @@ const dropdownFooterLink =
 
 export function SiteNavbar() {
   const guides = getAllGuides()
+  const stories = getAllStories()
 
   return (
-    <NavbarWithLinksActionsAndCenteredLogo
+    <NavbarWithLogoActionsAndLeftAlignedLinks
       id="navbar"
       links={
         <>
@@ -65,6 +68,30 @@ export function SiteNavbar() {
           </NavbarDropdown>
           <NavbarLink href="/catalog">Catalog</NavbarLink>
           <NavbarLink href="/pricing">Pricing</NavbarLink>
+          <NavbarDropdown
+            href="/customers"
+            label="Customers"
+            eyebrow="Customer stories"
+            mobileLinks={stories.map(story => ({
+              href: `/customers/${story.slug}`,
+              label: story.fields.company ?? story.title,
+            }))}
+            footer={
+              <a href="/customers" className={dropdownFooterLink}>
+                All customer stories <ArrowNarrowRightIcon />
+              </a>
+            }
+          >
+            {stories.map(story => (
+              <NavbarDropdownItem
+                key={story.slug}
+                href={`/customers/${story.slug}`}
+                title={story.fields.company ?? story.title}
+                description={story.fields.industry}
+                icon={<Building2Icon />}
+              />
+            ))}
+          </NavbarDropdown>
           <NavbarDropdown
             href="/guides"
             label="Guides"

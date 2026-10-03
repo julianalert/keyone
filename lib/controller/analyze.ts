@@ -30,8 +30,8 @@ interface Fact {
   provider_cost_usd: number; price_usd: number; fallback_priced: number
 }
 
-interface Project { id: string; name: string; client_id: string; monthly_budget_usd: number | null; allowed_models: string[] | null; is_active: boolean }
-interface Client { id: string; name: string; monthly_budget_usd: number | null; rebill_markup_pct: number; is_active: boolean }
+interface Project { id: string; name: string; client_id: string; monthly_budget_usd: number | null; allowed_models: string[] | null; is_active: boolean; created_at: string }
+interface Client { id: string; name: string; monthly_budget_usd: number | null; rebill_markup_pct: number; is_active: boolean; created_at: string }
 
 export interface AnalysisContext {
   now: Date
@@ -48,8 +48,8 @@ export async function loadContext(supabase: SupabaseClient, agencyId: string, no
   const from = new Date(now.getTime() - 35 * 86400_000).toISOString()
   const [{ data: facts, error }, { data: projects }, { data: clients }, { data: pending }] = await Promise.all([
     supabase.rpc('controller_facts', { p_agency_id: agencyId, p_from: from }),
-    supabase.from('projects').select('id, name, client_id, monthly_budget_usd, allowed_models, is_active').eq('agency_id', agencyId),
-    supabase.from('clients').select('id, name, monthly_budget_usd, rebill_markup_pct, is_active').eq('agency_id', agencyId),
+    supabase.from('projects').select('id, name, client_id, monthly_budget_usd, allowed_models, is_active, created_at').eq('agency_id', agencyId),
+    supabase.from('clients').select('id, name, monthly_budget_usd, rebill_markup_pct, is_active, created_at').eq('agency_id', agencyId),
     supabase.from('budget_requests').select('id, project_id, requested_budget_usd, created_at').eq('agency_id', agencyId).eq('status', 'pending'),
   ])
   if (error) throw new Error(error.message)
@@ -165,8 +165,12 @@ export async function analyze(ctx: AnalysisContext): Promise<Finding[]> {
     }
   }
 
-  // 4. Idle budget: budget set, almost no spend in 30 days
-  for (const p of projects.filter(p => p.is_active && p.monthly_budget_usd && p.monthly_budget_usd >= 20)) {
+  // 4. Idle budget: budget set, almost no spend in 30 days. Only once the
+  //    project or client has existed for the whole window: a budget set last
+  //    week has had no month to be used yet.
+  const IDLE_MIN_AGE_DAYS = 30
+  const ageDays = (createdAt: string) => (now.getTime() - new Date(createdAt).getTime()) / 86400_000
+  for (const p of projects.filter(p => p.is_active && p.monthly_budget_usd && p.monthly_budget_usd >= 20 && ageDays(p.created_at) >= IDLE_MIN_AGE_DAYS)) {
     const spent30 = sum(facts.filter(f => f.project_id === p.id && daysAgo(f.day) < 30), 'price_usd')
     if (spent30 < p.monthly_budget_usd! * 0.02) {
       const suggested = Math.max(5, Math.ceil(spent30 * 5))
@@ -179,7 +183,7 @@ export async function analyze(ctx: AnalysisContext): Promise<Finding[]> {
       })
     }
   }
-  for (const c of clients.filter(c => c.is_active && c.monthly_budget_usd && c.monthly_budget_usd >= 20)) {
+  for (const c of clients.filter(c => c.is_active && c.monthly_budget_usd && c.monthly_budget_usd >= 20 && ageDays(c.created_at) >= IDLE_MIN_AGE_DAYS)) {
     const spent30 = sum(facts.filter(f => f.client_id === c.id && daysAgo(f.day) < 30), 'price_usd')
     if (spent30 < c.monthly_budget_usd! * 0.02) {
       const suggested = Math.max(5, Math.ceil(spent30 * 5))

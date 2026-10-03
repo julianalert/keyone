@@ -2,7 +2,7 @@
 export const faqs = [
   {
     q: 'Do I need my own provider accounts?',
-    a: 'No. Keyone provides access to its supported catalogue through your agency account and prepaid wallet. Each client project gets its own Keyone API key.',
+    a: 'No. Keyone provides access to its supported catalogue through your account and prepaid wallet. Each client project gets its own Keyone API key.',
   },
   {
     q: 'Do my clients need to use Keyone?',

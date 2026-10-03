@@ -9,7 +9,7 @@ import { StartFreeCallToAction } from '../start-free-cta'
 import { productPages } from './pages'
 
 export const metadata = pageMetadata({
-  title: 'Product: AI cost tracking, budgets and keys for agencies',
+  title: 'Product: AI cost tracking, budgets and keys for agencies and freelancers',
   description:
     'Everything in keyone: per-client AI cost tracking, budgets and limits, client reports, one key per client project, the controller and the tool catalog.',
   path: '/product',

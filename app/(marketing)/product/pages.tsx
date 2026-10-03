@@ -540,7 +540,7 @@ export const productPages: ProductPageContent[] = [
     faqs: [
       {
         q: 'Do I need my own provider accounts?',
-        a: 'No. keyone provides access to its supported catalogue through your agency account and prepaid wallet. Each client project gets its own keyone API key.',
+        a: 'No. keyone provides access to its supported catalogue through your account and prepaid wallet. Each client project gets its own keyone API key.',
       },
       {
         q: 'What if a project key leaks?',

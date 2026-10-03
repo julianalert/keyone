@@ -22,6 +22,7 @@ import {
 import { getAllStories } from './customers/stories'
 import { getAllGuides } from './guides/guides'
 import { productPages } from './product/pages'
+import { useCases } from './use-cases/use-cases'
 
 /* Navbar and footer shared by every marketing page (see layout.tsx). */
 
@@ -66,6 +67,21 @@ export function SiteNavbar() {
               />
             ))}
           </NavbarDropdown>
+          <NavbarDropdown
+            href="/use-cases"
+            label={<span className="whitespace-nowrap">Use cases</span>}
+            eyebrow="Who keyone is for"
+            mobileLinks={useCases.map(u => ({ href: `/use-cases/${u.slug}`, label: u.name }))}
+            footer={
+              <a href="/use-cases" className={dropdownFooterLink}>
+                All use cases <ArrowNarrowRightIcon />
+              </a>
+            }
+          >
+            {useCases.map(u => (
+              <NavbarDropdownItem key={u.slug} href={`/use-cases/${u.slug}`} title={u.name} description={u.tagline} icon={u.icon} />
+            ))}
+          </NavbarDropdown>
           <NavbarLink href="/catalog">Catalog</NavbarLink>
           <NavbarLink href="/pricing">Pricing</NavbarLink>
           <NavbarDropdown
@@ -95,7 +111,7 @@ export function SiteNavbar() {
           <NavbarDropdown
             href="/guides"
             label="Guides"
-            eyebrow="Guides for agencies"
+            eyebrow="Guides for agencies and freelancers"
             footer={
               <a href="/guides" className={dropdownFooterLink}>
                 All guides <ArrowNarrowRightIcon />
@@ -144,8 +160,8 @@ export function SiteFooter() {
             <span className="font-display text-3xl/none tracking-tight text-olive-950 dark:text-white">keyone</span>
           </a>
           <p className="text-olive-700 dark:text-olive-400">
-            Run every client’s AI through one agency account. See what each one spends, set its budget, and rebill
-            with a clear breakdown.
+            Run every client’s AI through one account. For agencies and freelancers who run AI for clients: see what
+            each one spends, set its budget, and rebill with a clear breakdown.
           </p>
           <ButtonLink href="/signup" className="self-start">
             Start with one client project <ArrowNarrowRightIcon />
@@ -163,6 +179,13 @@ export function SiteFooter() {
             <FooterLink href="/catalog">Catalog</FooterLink>
             <FooterLink href="/pricing">Pricing</FooterLink>
           </FooterCategory>
+          <FooterCategory title="Use cases">
+            {useCases.map(u => (
+              <FooterLink key={u.slug} href={`/use-cases/${u.slug}`}>
+                {u.name}
+              </FooterLink>
+            ))}
+          </FooterCategory>
           <FooterCategory title="Resources">
             <FooterLink href="/guides">Guides</FooterLink>
             <FooterLink href="/blog">Blog</FooterLink>
@@ -178,7 +201,7 @@ export function SiteFooter() {
           </FooterCategory>
         </>
       }
-      fineprint={<>© {new Date().getFullYear()} keyone · API keys and AI spend for agencies, organized by client.</>}
+      fineprint={<>© {new Date().getFullYear()} keyone · API keys and AI spend for agencies and freelancers, organized by client.</>}
       // Bottom row, right side: legal links, then the social icons
       socialLinks={
         <>

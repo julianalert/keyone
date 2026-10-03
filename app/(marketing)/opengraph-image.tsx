@@ -5,5 +5,5 @@ export const size = OG_SIZE
 export const contentType = OG_CONTENT_TYPE
 
 export default function Image() {
-  return ogCard({ eyebrow: 'For agencies running AI for clients', title: 'Know what every client’s', accent: 'AI costs.' })
+  return ogCard({ eyebrow: 'For agencies and freelancers who run AI for clients', title: 'Know what every client’s', accent: 'AI costs.' })
 }

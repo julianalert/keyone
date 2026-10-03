@@ -2,6 +2,7 @@ import { getAllPosts } from '../(marketing)/blog/posts'
 import { getAllStories } from '../(marketing)/customers/stories'
 import { getAllGuides } from '../(marketing)/guides/guides'
 import { productPages } from '../(marketing)/product/pages'
+import { useCases } from '../(marketing)/use-cases/use-cases'
 import { SITE_DESCRIPTION, SITE_URL } from '../(marketing)/seo'
 
 // llms.txt (https://llmstxt.org): a plain summary of the site for AI assistants and AI search.
@@ -15,7 +16,7 @@ export function GET() {
 
 > ${SITE_DESCRIPTION}
 
-keyone is an AI spend management platform for AI automation agencies. The agency gets one account and one API key per client project; every call is attributed to its client and project, and checked against budgets, per-call caps and allowed tools and models before it reaches the provider. Usage is paid from a prepaid wallet, with no subscription.
+keyone is an AI spend management platform for agencies and freelancers who run AI for clients: AI automation agencies, marketing agencies, freelance automation builders and dev shops. The business gets one account and one API key per client project; every call is attributed to its client and project, and checked against budgets, per-call caps and allowed tools and models before it reaches the provider. Usage is paid from a prepaid wallet, with no subscription.
 
 ## Pages
 
@@ -23,12 +24,17 @@ keyone is an AI spend management platform for AI automation agencies. The agency
 - [Catalog](${SITE_URL}/catalog): every tool a project key can call, with models and prices
 - [Pricing](${SITE_URL}/pricing): provider cost + 30% per call, prepaid wallet, no subscription
 - [About](${SITE_URL}/about): company, team, differentiators and key facts
-- [Guides](${SITE_URL}/guides): practical guides for agencies running AI for clients
+- [Use cases](${SITE_URL}/use-cases): who keyone is for, one page per kind of business
+- [Guides](${SITE_URL}/guides): practical guides for agencies and freelancers running AI for clients
 - [Book a demo](${SITE_URL}/demo): a 30-minute call with the founder
 
 ## Product
 
 ${productPages.map(p => `- [${p.name}](${SITE_URL}/product/${p.slug}): ${p.metaDescription}`).join('\n')}
+
+## Use cases
+
+${useCases.map(u => `- [${u.name}](${SITE_URL}/use-cases/${u.slug}): ${u.metaDescription}`).join('\n')}
 
 ## Guides
 

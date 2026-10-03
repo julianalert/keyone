@@ -9,7 +9,8 @@ import { getAllStories } from './stories'
 
 export const metadata = pageMetadata({
   title: 'Customer stories',
-  description: 'How agencies use keyone to run AI for their clients: the challenge they had, how they set it up, and what changed.',
+  description:
+    'How agencies and freelancers use keyone to run AI for their clients: the challenge they had, how they set it up, and what changed.',
   path: '/customers',
 })
 
@@ -23,7 +24,7 @@ export default function CustomersPage() {
           <div className="flex max-w-2xl flex-col gap-6">
             <Heading>Customer stories</Heading>
             <Text size="lg" className="flex flex-col gap-4">
-              <p>How agencies use keyone to run AI for their clients: the challenge, the setup, and what changed.</p>
+              <p>How agencies and freelancers use keyone to run AI for their clients: the challenge, the setup, and what changed.</p>
             </Text>
           </div>
           <GuideGrid guides={stories} basePath="/customers" />

@@ -5,6 +5,7 @@ import { getAllGuides } from './(marketing)/guides/guides'
 import { LEGAL_LAST_UPDATED_ISO } from './(marketing)/company'
 import { productPages } from './(marketing)/product/pages'
 import { PAGES_LAST_UPDATED, SITE_URL } from './(marketing)/seo'
+import { useCases } from './(marketing)/use-cases/use-cases'
 
 // Public marketing pages only; the dashboard and API are not indexed (see robots.ts).
 export default function sitemap(): MetadataRoute.Sitemap {
@@ -19,6 +20,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${SITE_URL}/product`, lastModified: PAGES_LAST_UPDATED, changeFrequency: 'monthly', priority: 0.9 },
     ...productPages.map(page => ({
       url: `${SITE_URL}/product/${page.slug}`,
+      lastModified: PAGES_LAST_UPDATED,
+      changeFrequency: 'monthly' as const,
+      priority: 0.9,
+    })),
+    { url: `${SITE_URL}/use-cases`, lastModified: PAGES_LAST_UPDATED, changeFrequency: 'monthly', priority: 0.9 },
+    ...useCases.map(page => ({
+      url: `${SITE_URL}/use-cases/${page.slug}`,
       lastModified: PAGES_LAST_UPDATED,
       changeFrequency: 'monthly' as const,
       priority: 0.9,

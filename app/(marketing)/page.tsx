@@ -33,6 +33,7 @@ import { getAllGuides } from './guides/guides'
 import { FlowIllustration, type ToolGroup } from './flow-illustration'
 import { StartFreeCallToAction } from './start-free-cta'
 import { KeySprawlDemo, StructureDemo } from './demos'
+import { UseCaseGrid } from './use-cases/use-case-grid'
 import { pageMetadata, SITE_DESCRIPTION, SITE_NAME, SITE_TAGLINE, SITE_URL } from './seo'
 
 // Regenerate hourly so the catalog section picks up changes to catalog_apis
@@ -219,7 +220,7 @@ export default async function HomePage() {
       {/* Hero */}
       <HeroLeftAlignedWithDemo
         id="hero"
-        eyebrow={<AnnouncementBadge href="#how" text="For agencies running AI for clients" cta="See how it works" />}
+        eyebrow={<AnnouncementBadge href="#how" text="For agencies and freelancers who run AI for clients" cta="See how it works" />}
         headline={
           <>
             Know what every client’s <span className="text-brand-green italic dark:text-brand-lime">AI costs.</span>
@@ -227,7 +228,7 @@ export default async function HomePage() {
         }
         subheadline={
           <p>
-            Run every client’s AI through one agency account. See what each one spends, set its budget, and get a clear
+            Run every client’s AI through one account. See what each one spends, set its budget, and get a clear
             breakdown, whether you rebill usage or include it in your retainer.
           </p>
         }
@@ -370,11 +371,31 @@ export default async function HomePage() {
         </div>
       </Section>
 
+      {/* Who it's for */}
+      <Section
+        id="use-cases"
+        eyebrow="Who it’s for"
+        headline="Built for anyone who runs AI for clients."
+        subheadline={
+          <p>
+            An agency of twenty or a freelancer with two clients, on n8n, Make or a codebase: you pay the providers,
+            your clients get the work, and you need to know what each one cost.
+          </p>
+        }
+        cta={
+          <PlainButtonLink href="/use-cases" className="self-start">
+            All use cases <ArrowNarrowRightIcon />
+          </PlainButtonLink>
+        }
+      >
+        <UseCaseGrid />
+      </Section>
+
       {/* Guides */}
       <Section
         id="guides"
         eyebrow="Guides"
-        headline="Learn how agencies run AI for clients."
+        headline="Learn how agencies and freelancers run AI for clients."
         cta={
           <PlainButtonLink href="/guides" className="self-start">
             All guides <ArrowNarrowRightIcon />
@@ -385,7 +406,7 @@ export default async function HomePage() {
       </Section>
 
       {/* FAQs */}
-      <FAQsTwoColumnAccordion id="faqs" headline="Questions agencies ask.">
+      <FAQsTwoColumnAccordion id="faqs" headline="Questions agencies and freelancers ask.">
         {faqs.map((f, i) => (
           <Faq key={f.q} id={`faq-${i + 1}`} question={f.q} answer={f.a} />
         ))}

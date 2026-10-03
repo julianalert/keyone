@@ -121,7 +121,7 @@ export async function ogCard({
             color: colors.muted,
           }}
         >
-          <div style={{ display: 'flex' }}>{footer ?? 'API keys and AI spend for agencies, organized by client'}</div>
+          <div style={{ display: 'flex' }}>{footer ?? 'API keys and AI spend for agencies and freelancers, organized by client'}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: colors.ink, fontWeight: 600 }}>
             <div style={{ width: 14, height: 14, borderRadius: 9999, background: colors.lime }} />
             getkeyone.com

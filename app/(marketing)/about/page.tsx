@@ -26,10 +26,10 @@ import { pageMetadata, SITE_URL } from '../seo'
 export const revalidate = 3600
 
 export const metadata: Metadata = pageMetadata({
-  title: 'About keyone: API keys and AI spend for agencies',
+  title: 'About keyone: API keys and AI spend for agencies and freelancers',
   absoluteTitle: true,
   description:
-    'keyone is an AI spend management platform that gives AI automation agencies one API key per client project, with every client’s spend tracked and capped.',
+    'keyone is an AI spend management platform for agencies and freelancers who run AI for clients: one API key per client project, with every client’s spend tracked and capped.',
   path: '/about',
 })
 
@@ -113,7 +113,8 @@ const segments = [
   'AI automation agencies running workflows for several clients on n8n, Make or custom code.',
   'Marketing agencies adding AI features, such as content, research and reporting, to client retainers.',
   'Freelance automation builders who manage provider access for more than one client.',
-  'Agency developers who let coding agents such as Claude Code or Cursor set up and run client projects.',
+  'Dev shops and software agencies shipping AI features inside client codebases.',
+  'Developers who let coding agents such as Claude Code or Cursor set up and run client projects.',
 ]
 
 const onboarding = [
@@ -186,7 +187,7 @@ function structuredData() {
       email: CONTACT_EMAIL,
       sameAs: ['https://x.com/notanothermrktr'],
       description:
-        'keyone is an AI spend management platform that gives AI automation agencies one API key per client project, with every client’s spend tracked and capped.',
+        'keyone is an AI spend management platform for agencies and freelancers who run AI for clients: one API key per client project, with every client’s spend tracked and capped.',
     },
     {
       '@context': 'https://schema.org',
@@ -218,11 +219,11 @@ export default async function AboutPage() {
       <HeroTwoColumnWithPhoto
         id="hero"
         eyebrow={<p className="text-sm/7 font-semibold text-olive-700 dark:text-olive-400">About keyone</p>}
-        headline="The API key and spend manager for AI agencies."
+        headline="The API key and spend manager for anyone who runs AI for clients."
         subheadline={
           <p>
-            keyone is an AI spend management platform that gives AI automation agencies one API key per client project,
-            for every tool in its catalog, and tracks and caps each client’s spend.
+            keyone is an AI spend management platform for agencies and freelancers who run AI for clients. Each client
+            project gets one API key for every tool in the catalog, and each client’s spend is tracked and capped.
           </p>
         }
         cta={

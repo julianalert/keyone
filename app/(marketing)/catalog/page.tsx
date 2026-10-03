@@ -65,7 +65,7 @@ async function getModelPrices(): Promise<ModelPrice[]> {
 const catalogFaqs = [
   {
     q: 'Do I need an account with each provider?',
-    a: 'No. keyone provides access to its supported catalogue through your agency account and prepaid wallet. Each client project gets its own keyone API key.',
+    a: 'No. keyone provides access to its supported catalogue through your account and prepaid wallet. Each client project gets its own keyone API key.',
   },
   {
     q: 'Does one key really work for every tool?',

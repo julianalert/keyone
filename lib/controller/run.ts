@@ -29,17 +29,29 @@ export async function runController(
 
     // Don't re-propose what's already open, nor what was decided in the
     // last 7 days: a dismissed finding shouldn't nag, an applied one needs
-    // time to take effect before it can legitimately come back.
+    // time to take effect before it can legitimately come back. Identity is
+    // the kind and the thing it's about, never the wording: a title that
+    // carries today's spend would otherwise count as new every time a cent moves.
     const cooldown = new Date(now.getTime() - 7 * 86400_000).toISOString()
     const { data: recent } = await supabase
       .from('controller_findings')
-      .select('kind, scope_id, title, status, decided_at')
+      .select('kind, scope_id, status, decided_at')
       .eq('agency_id', agencyId)
       .or(`status.eq.proposed,decided_at.gte.${cooldown}`)
-    const seen = new Set((recent ?? []).map(o => `${o.kind}:${o.scope_id}:${o.title}`))
-    const fresh = findings.filter(f => !seen.has(`${f.kind}:${f.scope_id}:${f.title}`))
+    const seen = new Set((recent ?? []).map(o => `${o.kind}:${o.scope_id}`))
+    const fresh = findings.filter(f => !seen.has(`${f.kind}:${f.scope_id}`))
+    const openCount = (recent ?? []).filter(o => o.status === 'proposed').length
 
-    const digest = await writeDigest(agency.name, findings)
+    // Only pay for a written digest when there is something new to say
+    const digest = fresh.length
+      ? await writeDigest(agency.name, findings)
+      : {
+          text: openCount
+            ? `Nothing new at ${agency.name}. ${openCount} proposal${openCount === 1 ? ' is' : 's are'} still waiting for a decision in the dashboard.`
+            : `Nothing needs attention at ${agency.name}. Spend is within budgets and no anomalies were found.`,
+          model: null,
+          cost_usd: 0,
+        }
 
     let stored: (Finding & { id: string; status: string })[] = []
     if (fresh.length) {

@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next'
 import { getAllPosts } from './(marketing)/blog/posts'
+import { getAllStories } from './(marketing)/customers/stories'
 import { getAllGuides } from './(marketing)/guides/guides'
 import { LEGAL_LAST_UPDATED_ISO } from './(marketing)/company'
 import { productPages } from './(marketing)/product/pages'
@@ -11,6 +12,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const latestGuide = guides[0]?.updated ?? guides[0]?.published
   const posts = getAllPosts()
   const latestPost = posts[0]?.updated ?? posts[0]?.published
+  const stories = getAllStories()
 
   return [
     { url: `${SITE_URL}/`, lastModified: PAGES_LAST_UPDATED, changeFrequency: 'weekly', priority: 1 },
@@ -31,7 +33,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly' as const,
       priority: 0.6,
     })),
+    { url: `${SITE_URL}/customers`, lastModified: stories[0]?.published, changeFrequency: 'monthly', priority: 0.7 },
+    ...stories.map(story => ({
+      url: `${SITE_URL}/customers/${story.slug}`,
+      lastModified: story.updated ?? story.published,
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    })),
     { url: `${SITE_URL}/docs`, lastModified: PAGES_LAST_UPDATED, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${SITE_URL}/demo`, lastModified: PAGES_LAST_UPDATED, changeFrequency: 'monthly', priority: 0.7 },
     { url: `${SITE_URL}/careers`, lastModified: PAGES_LAST_UPDATED, changeFrequency: 'monthly', priority: 0.4 },
     { url: `${SITE_URL}/guides`, lastModified: latestGuide, changeFrequency: 'weekly', priority: 0.8 },
     ...guides.map(guide => ({

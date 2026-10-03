@@ -19,7 +19,12 @@ export function StartFreeCallToAction() {
           <ButtonLink href="/signup" size="lg" color="light">
             Start with one client project <ArrowNarrowRightIcon />
           </ButtonLink>
-          <p className="text-sm/7 text-olive-400">No monthly subscription. Add funds when you’re ready to run.</p>
+          <p className="text-sm/7 text-olive-400">
+            No monthly subscription. Add funds when you’re ready to run.{' '}
+            <a href="/demo" className="font-medium whitespace-nowrap text-white underline">
+              Or book a demo
+            </a>
+          </p>
         </div>
       }
     />

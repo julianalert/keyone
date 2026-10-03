@@ -35,6 +35,8 @@ export interface GuideMeta {
   authorRole?: string
   authorImage?: string
   readingMinutes: number
+  // Every frontmatter field as written, for collections with extra fields (e.g. customer stories)
+  fields: Record<string, string>
 }
 
 export interface TocEntry {
@@ -143,6 +145,7 @@ export function createCollection(folder: string) {
       authorRole: data.authorRole,
       authorImage: data.authorImage,
       readingMinutes: Math.max(1, Math.round(words / WORDS_PER_MINUTE)),
+      fields: data,
       html,
       toc,
     }

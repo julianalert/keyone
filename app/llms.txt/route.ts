@@ -1,4 +1,5 @@
 import { getAllPosts } from '../(marketing)/blog/posts'
+import { getAllStories } from '../(marketing)/customers/stories'
 import { getAllGuides } from '../(marketing)/guides/guides'
 import { productPages } from '../(marketing)/product/pages'
 import { SITE_DESCRIPTION, SITE_URL } from '../(marketing)/seo'
@@ -9,6 +10,7 @@ export const dynamic = 'force-static'
 export function GET() {
   const guides = getAllGuides()
   const posts = getAllPosts()
+  const stories = getAllStories()
   const body = `# keyone
 
 > ${SITE_DESCRIPTION}
@@ -22,6 +24,7 @@ keyone is an AI spend management platform for AI automation agencies. The agency
 - [Pricing](${SITE_URL}/pricing): provider cost + 30% per call, prepaid wallet, no subscription
 - [About](${SITE_URL}/about): company, team, differentiators and key facts
 - [Guides](${SITE_URL}/guides): practical guides for agencies running AI for clients
+- [Book a demo](${SITE_URL}/demo): a 30-minute call with the founder
 
 ## Product
 
@@ -34,6 +37,10 @@ ${guides.map(g => `- [${g.title}](${SITE_URL}/guides/${g.slug}): ${g.description
 ## Blog
 
 ${posts.map(p => `- [${p.title}](${SITE_URL}/blog/${p.slug}): ${p.description}`).join('\n')}
+
+## Customer stories
+
+${stories.map(s => `- [${s.title}](${SITE_URL}/customers/${s.slug}): ${s.description}`).join('\n')}
 
 ## For agents
 

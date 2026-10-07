@@ -167,6 +167,26 @@ add('anthropic sdk · adaptive thinking (sonnet 5)', async () => {
   return `"${text.text.trim().slice(0, 20)}" · ${c.output_tokens} out tok (thinking billed as output)`
 })
 
+// --- OpenAI-shaped clients pointed at the Anthropic base URL ---
+// They land on Anthropic's OpenAI-compatible endpoint, which reports usage under OpenAI's names.
+const oaOnAnthropic = new OpenAI({ baseURL: `${ANTHROPIC_BASE}/v1`, apiKey: KEY })
+add('openai sdk → anthropic · chat completions · buffered', async () => {
+  const t0 = Date.now()
+  const r = await oaOnAnthropic.chat.completions.create({ model: CHEAP_ANTHROPIC, max_tokens: 20, messages: [{ role: 'user', content: 'Say hi' }] })
+  if (!r.choices[0]?.message?.content) throw new Error('no content')
+  const c = await expectLogged(t0, c => completedAndPriced(c) && (c.model ?? '').startsWith('claude'), 'anthropic openai-shaped buffered')
+  return `"${r.choices[0].message.content.trim().slice(0, 30)}" · ${c.input_tokens}+${c.output_tokens} tok · $${Number(c.cost_usd).toFixed(6)}`
+})
+add('openai sdk → anthropic · chat completions · streamed', async () => {
+  const t0 = Date.now()
+  const stream = await oaOnAnthropic.chat.completions.create({ model: CHEAP_ANTHROPIC, max_tokens: 20, stream: true, messages: [{ role: 'user', content: 'Count to three' }] })
+  let text = ''
+  for await (const chunk of stream) text += chunk.choices[0]?.delta?.content ?? ''
+  if (!text) throw new Error('no streamed text')
+  const c = await expectLogged(t0, c => completedAndPriced(c) && Number(c.output_tokens ?? 0) > 0, 'anthropic openai-shaped streamed')
+  return `${text.trim().slice(0, 30)} · ${c.input_tokens}+${c.output_tokens} tok · $${Number(c.cost_usd).toFixed(6)}`
+})
+
 // --- Vercel AI SDK ---
 const vOpenAI = createOpenAI({ baseURL: OPENAI_BASE, apiKey: KEY })
 const vAnthropic = createAnthropic({ baseURL: ANTHROPIC_BASE, apiKey: KEY })
@@ -326,6 +346,39 @@ add('provider error is logged as failed and not charged', async () => {
   if (r.ok) throw new Error('expected a provider error')
   const c = await expectLogged(t0, c => c.status === 'failed' && c.model === 'gpt-does-not-exist', 'failed call')
   return `HTTP ${r.status} · logged failed · $${Number(c.cost_usd).toFixed(6)}`
+})
+add('endpoints the proxy cannot bill are refused', async () => {
+  const h = { Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json' }
+  const tries: Array<[string, string, string]> = [
+    ['POST', `${ANTHROPIC_BASE}/v1/messages/batches`, '{"requests":[]}'],
+    ['POST', `${OPENAI_BASE}/batches`, '{}'],
+    ['POST', `${OPENAI_BASE}/responses`, JSON.stringify({ model: CHEAP_OPENAI, input: 'hi', background: true })],
+    ['GET', `${OPENAI_BASE}/files`, ''],
+    ['GET', `${ANTHROPIC_BASE}/v1/messages/batches`, ''],
+  ]
+  for (const [method, url, body] of tries) {
+    const r = await fetch(url, { method, headers: h, ...(method === 'POST' ? { body } : {}) })
+    const j = await r.json().catch(() => ({}))
+    if (r.status !== 404 || j.error !== 'unsupported_endpoint') throw new Error(`${method} ${url.replace(BASE, '')}: expected 404 unsupported_endpoint, got ${r.status} ${j.error}`)
+  }
+  return `${tries.length} refused with 404 unsupported_endpoint`
+})
+add('a stream the client stops is still billed', async () => {
+  const ac = new AbortController()
+  const r = await fetch(`${ANTHROPIC_BASE}/v1/messages`, {
+    method: 'POST', signal: ac.signal, headers: { Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: CHEAP_ANTHROPIC, max_tokens: 600, stream: true, messages: [{ role: 'user', content: 'Count from 1 to 300, one number per line.' }] }),
+  })
+  if (!r.ok || !r.body) throw new Error(`HTTP ${r.status}`)
+  const callId = r.headers.get('x-call-id')
+  if (!callId) throw new Error('no X-Call-ID header')
+  const reader = r.body.getReader()
+  let seen = ''
+  while (!seen.includes('content_block_delta')) { const { done, value } = await reader.read(); if (done) throw new Error('stream ended before it could be stopped'); seen += new TextDecoder().decode(value) }
+  ac.abort()
+  const c = await expectLogged(0, c => c.id === callId && c.status !== 'pending', 'stopped stream')
+  if (c.status !== 'completed' || !(Number(c.cost_usd) > 0)) throw new Error(`stopped stream logged as ${c.status} at $${c.cost_usd}`)
+  return `stopped mid-stream · ${c.input_tokens}+${c.output_tokens} tok · $${Number(c.cost_usd).toFixed(6)}`
 })
 add('allowed-models control blocks and unblocks', async () => {
   if (!ADMIN) throw new Error('needs KEYONE_TEST_ADMIN_KEY')

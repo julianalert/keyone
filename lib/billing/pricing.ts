@@ -79,7 +79,13 @@ async function loadPrices(): Promise<ModelPrice[]> {
       .from('model_prices')
       .select('provider, model, input_per_million, output_per_million, cached_input_per_million')
       .eq('is_active', true)
-    if (basic.error) console.error('[pricing] model_prices unavailable:', basic.error.message)
+    if (basic.error) {
+      // Keep the last good table. An empty one must not be cached: with no
+      // prices the proxy refuses per-token calls, and that should last only
+      // as long as the outage.
+      console.error('[pricing] model_prices unavailable:', basic.error.message)
+      return cache?.rows ?? []
+    }
     data = basic.data as Row[] | null
   } else {
     data = full.data as Row[] | null

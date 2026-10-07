@@ -11,8 +11,43 @@ export const DEFAULT_MAX_OUTPUT_TOKENS = 4096
 // Image output tokens per image at 1024×1024, by quality (gpt-image figures)
 const IMAGE_TOKENS: Record<string, number> = { low: 272, medium: 1056, high: 4160, xhigh: 6240, max: 8320 }
 
+// Rough token count for text we have not sent yet. ASCII runs about four
+// characters per token; CJK and other non-ASCII text runs well over a token
+// per character (a 134k-character Chinese prompt measured 156k tokens).
+export function roughTokens(text: string): number {
+  let wide = 0
+  for (let i = 0; i < text.length; i++) if (text.charCodeAt(i) > 0x7f) wide++
+  return Math.ceil((text.length - wide) / 4 + wide * 1.5)
+}
+
+// Inline media (base64 images, PDFs, audio) is billed for what it holds, not
+// for its length: each one counts as a flat allowance and the rest is measured
+// as text. Media is recognised by where it sits in the request, never by what
+// a string looks like, so a wall of text cannot pass for an image.
+const MEDIA_TOKENS = 3000
+
+function promptTokens(value: unknown): number {
+  let media = 0
+  const text = JSON.stringify(value, function (this: Record<string, unknown>, key: string, v: unknown) {
+    if (typeof v !== 'string' || v.length < 2000) return v
+    const inline =
+      v.startsWith('data:') ||                                                        // image_url / file data URLs
+      (key === 'data' && (this.type === 'base64' || typeof this.format === 'string')) ||  // Anthropic source, OpenAI input_audio
+      key === 'file_data'
+    if (!inline) return v
+    media++
+    return ''
+  })
+  return roughTokens(text ?? '') + media * MEDIA_TOKENS
+}
+
+// Everything in a request that the model reads as input
+const PROMPT_FIELDS = ['system', 'instructions', 'messages', 'input', 'prompt', 'tools']
+
 // Upper-bound usage for a call before it is sent, per kind of model.
-function estimateUsage(price: ModelPrice, body: Record<string, unknown>, path: string | null): TokenUsage {
+// `outputTokens` replaces the max_tokens bound when the output is already
+// known (a stream that was cut short).
+export function estimateUsage(price: ModelPrice, body: Record<string, unknown>, path: string | null, outputTokens?: number): TokenUsage {
   const n = typeof body.n === 'number' && body.n > 0 ? body.n : 1
   switch (price.kind) {
     case 'image': {
@@ -21,10 +56,8 @@ function estimateUsage(price: ModelPrice, body: Record<string, unknown>, path: s
       const prompt = typeof body.prompt === 'string' ? body.prompt : ''
       return { input_tokens: Math.ceil(prompt.length / 4), output_tokens: 0, image_output_tokens: n * (IMAGE_TOKENS[quality] ?? IMAGE_TOKENS.high) }
     }
-    case 'embedding': {
-      const input = JSON.stringify(body.input ?? '')
-      return { input_tokens: Math.ceil(input.length / 4), output_tokens: 0 }
-    }
+    case 'embedding':
+      return { input_tokens: roughTokens(JSON.stringify(body.input ?? '')), output_tokens: 0 }
     case 'speech': {
       const input = typeof body.input === 'string' ? body.input : ''
       return { input_tokens: 0, output_tokens: 0, characters: input.length }
@@ -36,12 +69,11 @@ function estimateUsage(price: ModelPrice, body: Record<string, unknown>, path: s
     case 'tool':
       return { input_tokens: 0, output_tokens: 0, units: 1 }
     default: {
-      const promptText = JSON.stringify(body.messages ?? body.input ?? body.prompt ?? body.system ?? '')
-      const inputTokens = Math.ceil(promptText.length / 4)
+      const inputTokens = PROMPT_FIELDS.reduce((sum, f) => sum + (body[f] === undefined ? 0 : promptTokens(body[f])), 0)
       const rawMax = body.max_tokens ?? body.max_completion_tokens ?? body.max_output_tokens
-      const outputTokens = typeof rawMax === 'number' && rawMax > 0 ? rawMax : DEFAULT_MAX_OUTPUT_TOKENS
+      const maxOutput = typeof rawMax === 'number' && rawMax > 0 ? rawMax : DEFAULT_MAX_OUTPUT_TOKENS
       void path
-      return { input_tokens: inputTokens, output_tokens: outputTokens }
+      return { input_tokens: inputTokens, output_tokens: outputTokens ?? maxOutput }
     }
   }
 }

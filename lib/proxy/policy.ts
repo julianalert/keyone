@@ -1,7 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { ResolvedKey } from '@/lib/proxy/auth'
-import type { CatalogApi } from '@/lib/supabase/types'
-import { estimateCallCost } from '@/lib/billing/calculate-cost'
 
 // A control is one limit the agency configured. When a call trips one,
 // the response carries the full snapshot so an agent can explain it or
@@ -56,14 +54,14 @@ export async function getSpendSnapshot(
   }
 }
 
+// `estimate` is the most the call could cost, null when that is unknown
 export async function evaluatePolicy(
   supabase: SupabaseClient,
   caller: ResolvedKey,
-  catalogApi: CatalogApi,
   slug: string,
   body: Record<string, unknown>,
-  model: string | null = null,
-  path: string | null = null
+  model: string | null,
+  estimate: number | null
 ): Promise<PolicyDecision> {
   const scope = {
     project_id: caller.project_id,
@@ -96,7 +94,6 @@ export async function evaluatePolicy(
 
   // 2. Budgets, against month-to-date spend plus this call's known price
   const spend = await getSpendSnapshot(supabase, caller.project_id, caller.client_id)
-  const estimate = await estimateCallCost(catalogApi, body, model, path)
   const projected = estimate ?? 0
 
   const projectBudget = caller.project.monthly_budget_usd

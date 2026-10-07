@@ -10,6 +10,15 @@ export interface UsageContext {
   body: Record<string, unknown>
 }
 
+// How a POST endpoint is accounted for: 'metered' is priced from usage,
+// 'free' costs nothing at the provider (token counting, moderation).
+export type EndpointBilling = 'metered' | 'free'
+
+// SDK-style path without the leading slash or version prefix: "/v1/messages" → "messages"
+export function endpointOf(path: string | null | undefined): string {
+  return (path ?? '').replace(/^\/+/, '').replace(/^v1\//, '').replace(/\/+$/, '')
+}
+
 // One adapter per upstream provider. Adding a provider = one file here plus
 // a catalog_apis row (and model_prices rows if it bills per token).
 export interface ProviderAdapter {
@@ -24,6 +33,12 @@ export interface ProviderAdapter {
   // /api/proxy/openai/v1/chat/completions; it replaces the catalog path.
   buildUrl(api: CatalogApi, path?: string): string
   buildHeaders(api: CatalogApi, incoming?: Headers): Record<string, string>
+
+  // Which POST endpoints the adapter can account for (`path` is null on the
+  // bare slug). null = not supported: the proxy refuses the call instead of
+  // forwarding something it cannot bill. Adapters without this method only
+  // serve the bare slug.
+  endpoint?(path: string | null, body: Record<string, unknown>): EndpointBilling | null
 
   // Chance to adjust the outbound JSON body (e.g. ask for usage in streams)
   prepareBody?(body: Record<string, unknown>, ctx: UsageContext): Record<string, unknown>

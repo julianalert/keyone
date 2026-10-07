@@ -67,7 +67,7 @@ curl -X POST {{ORIGIN}}/api/proxy/openai \
 
 ## Providers and endpoints
 
-Everything a provider exposes goes through the same base URL with the project key.
+These endpoints go through the same base URL with the project key. Anything else answers `404 unsupported_endpoint`.
 
 | Provider | Base URL | What goes through |
 |---|---|---|
@@ -161,7 +161,7 @@ Small increases can be approved automatically; the response then says `"status":
 
 ## Empty wallet
 
-A `402` means the agency wallet is empty. The response includes the balance and a link to top up. Only the agency owner can add funds.
+A `402` means the agency wallet is empty, or holds less than the call could cost (`estimated_call_usd` in the response; lower `max_tokens` or use a cheaper model). The response includes the balance and a link to top up. Only the agency owner can add funds.
 
 ## MCP server
 

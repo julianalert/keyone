@@ -134,12 +134,17 @@ export function notFound(message = 'API not found') {
   return Response.json({ error: message }, { status: 404 })
 }
 
-export function insufficientBalance(balance: number) {
+// `estimate` is set when the wallet is not empty but cannot cover this call
+export function insufficientBalance(balance: number, estimate?: number) {
+  const topUp = `${appUrl('https://getkeyone.com')}/dashboard/wallet`
   return Response.json(
     {
       error: 'Insufficient balance',
       balance_usd: balance,
-      message: `Top up your wallet at ${appUrl('https://getkeyone.com')}/dashboard/wallet`,
+      ...(estimate === undefined ? {} : { estimated_call_usd: estimate }),
+      message: estimate === undefined
+        ? `Top up your wallet at ${topUp}`
+        : `This call could cost up to $${estimate.toFixed(4)} and the wallet holds $${balance.toFixed(4)}. Lower max_tokens, use a cheaper model, or top up at ${topUp}`,
     },
     { status: 402 }
   )

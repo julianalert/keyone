@@ -6,6 +6,7 @@ import {
   isTerminalStatus,
 } from '@/lib/proxy/async'
 import { createServiceClient } from '@/lib/supabase/server'
+import { chargeWallet } from '@/lib/billing/wallet'
 import { raiseAlert } from '@/lib/notify'
 import { appUrl } from '@/lib/config'
 
@@ -152,13 +153,8 @@ export async function GET(
       .eq('id', callRecord.id)
 
     if (cost > 0) {
-      // Atomic deduction via DB function
-      await supabase.rpc('deduct_wallet', {
-        p_agency_id: caller.agency_id,
-        p_amount: cost,
-        p_description: `${catalogApi.slug} · ${caller.client.name} / ${caller.project.name} (${resultCount} results)`,
-        p_api_call_id: callRecord.id,
-      })
+      // Atomic deduction via DB function (takes what is left if the run cost more)
+      await chargeWallet(supabase, caller.agency_id, cost, `${catalogApi.slug} · ${caller.client.name} / ${caller.project.name} (${resultCount} results)`, callRecord.id)
 
       // Budget alert if balance drops below threshold
       const balance = await getWalletBalance(caller.agency_id)

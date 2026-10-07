@@ -106,7 +106,7 @@ curl -X POST ${origin}/api/proxy/openai \\
 price table and returns the choice in \`X-Model-Resolved\`. Prefer \`cheapest\` unless the task
 needs more.
 
-Everything a provider exposes goes through the same base URL with the project key:
+These endpoints go through the same base URL with the project key; anything else answers \`404 unsupported_endpoint\`:
 
 | Provider | Through key.one | Billed as |
 |----------|-----------------|-----------|
@@ -158,7 +158,7 @@ Small increases may be approved automatically (the response says \`"status": "ap
 Otherwise the owner gets an email with approve/deny links; poll \`GET /api/proxy/requests\`
 or tell the user to expect a decision. File one request per block, not one per retry.
 
-A **402** means the agency wallet is empty. Only the agency owner can top up.
+A **402** means the agency wallet is empty, or holds less than the call could cost (\`estimated_call_usd\` in the body: lower \`max_tokens\` or use a cheaper model). Only the agency owner can top up.
 
 ## Managing projects with an agency key
 

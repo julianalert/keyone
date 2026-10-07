@@ -1,4 +1,4 @@
-import type { ProviderAdapter, UsageContext } from './types'
+import { endpointOf, type ProviderAdapter, type UsageContext } from './types'
 import type { TokenUsage } from '@/lib/billing/pricing'
 
 // Perplexity: the Agent API (POST /v1/agent, OpenAI-Responses-shaped) and the
@@ -14,7 +14,10 @@ function upstreamPath(path: string): string {
   return p                                   // search, chat/completions, …
 }
 
-const isSearch = (ctx: UsageContext) => (ctx.path ?? '').replace(/^\/+/, '').replace(/^v1\//, '') === 'search'
+const isSearch = (ctx: UsageContext) => endpointOf(ctx.path) === 'search'
+
+// POST endpoints we can price ('' is the bare slug → /v1/agent)
+const ENDPOINTS = ['', 'agent', 'responses', 'search', 'chat/completions']
 
 interface PerplexityUsage {
   input_tokens?: number
@@ -49,6 +52,8 @@ export const perplexity: ProviderAdapter = {
     'Content-Type': 'application/json',
     Authorization: `Bearer ${process.env.PERPLEXITY_API_KEY}`,
   }),
+
+  endpoint: path => (ENDPOINTS.includes(endpointOf(path)) ? 'metered' : null),
 
   wantsStream: body => body.stream === true,
 

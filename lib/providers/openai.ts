@@ -1,6 +1,19 @@
-import type { ProviderAdapter, UsageContext } from './types'
+import { endpointOf, type EndpointBilling, type ProviderAdapter, type UsageContext } from './types'
 import type { TokenUsage } from '@/lib/billing/pricing'
 import { imageFactor } from '@/lib/billing/calculate-cost'
+
+// POST endpoints we can price
+const ENDPOINTS: Record<string, EndpointBilling> = {
+  '': 'metered',                      // bare slug → /v1/chat/completions
+  'chat/completions': 'metered',
+  'responses': 'metered',
+  'embeddings': 'metered',
+  'images/generations': 'metered',
+  'images/edits': 'metered',
+  'audio/speech': 'metered',
+  'audio/transcriptions': 'metered',
+  'moderations': 'free',
+}
 
 interface OpenAIUsage {
   // Chat Completions / embeddings
@@ -92,6 +105,14 @@ export const openai: ProviderAdapter = {
     const beta = incoming?.get('openai-beta')
     if (beta) h['openai-beta'] = beta
     return h
+  },
+
+  // A background response returns before it has any usage and is collected
+  // later by id, so there is nothing to bill it from.
+  endpoint: (path, body) => {
+    const p = endpointOf(path)
+    if (p === 'responses' && body.background === true) return null
+    return ENDPOINTS[p] ?? null
   },
 
   wantsStream: body => body.stream === true,

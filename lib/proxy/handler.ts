@@ -9,12 +9,13 @@ import {
 } from '@/lib/proxy/auth'
 import { appUrl } from '@/lib/config'
 import { checkRateLimit } from '@/lib/proxy/rate-limit'
-import { MIN_BUFFER_USD } from '@/lib/billing/calculate-cost'
+import { MIN_BUFFER_USD, estimateCallCost, estimateUsage, roughTokens } from '@/lib/billing/calculate-cost'
 import { resolveModelPrice, providerCost, toolFees, userPrice, type TokenUsage, type PricingStatus } from '@/lib/billing/pricing'
+import { chargeWallet } from '@/lib/billing/wallet'
 import { getAdapter } from '@/lib/providers'
-import type { UsageContext } from '@/lib/providers/types'
+import { endpointOf, type EndpointBilling, type UsageContext } from '@/lib/providers/types'
 import { isModelShortcut, resolveModelShortcut } from '@/lib/billing/shortcuts'
-import { teeSse } from '@/lib/proxy/stream'
+import { teeSse, streamedText } from '@/lib/proxy/stream'
 import { startApifyRun } from '@/lib/proxy/async'
 import { evaluatePolicy, blockedResponse } from '@/lib/proxy/policy'
 import { runPostCallControls } from '@/lib/proxy/controls'
@@ -28,9 +29,14 @@ interface Priced {
   cost: number             // what the project is charged
   providerCost: number     // what key.one pays
   usage: TokenUsage | null
-  status: PricingStatus | 'catalog'
+  // How the price was arrived at; 'estimated' = the response carried no usage
+  status: PricingStatus | 'catalog' | 'estimated' | 'free'
   model: string | null     // the model the call was priced as (may come from the response)
 }
+
+// The proxy routes run with maxDuration = 300. A stream still going by then is
+// cut and settled here, before the platform kills the function mid-stream.
+const STREAM_BUDGET_MS = 285_000
 
 // Shared by /api/proxy/[slug] and the SDK-style /api/proxy/[slug]/[...path]
 export async function handleProxy(req: Request, slug: string, path?: string) {
@@ -70,8 +76,11 @@ export async function handleProxy(req: Request, slug: string, path?: string) {
     'X-Client-ID': caller.client_id,
   }
 
-  // 3b. GET passthrough (model listings and the like): nothing to bill
+  // 3b. GET passthrough for model listings: nothing to bill. Nothing else is
+  //     readable with key.one's credentials (files, batches and stored
+  //     responses on the provider account are not scoped to one agency).
   if (req.method === 'GET') {
+    if (!/^models(\/.+)?$/.test(endpointOf(path))) return unsupported(catalogApi.name, 'GET', path)
     const headers = adapter.buildHeaders(catalogApi, req.headers)
     delete headers['Content-Type']
     let upstream: Response
@@ -104,6 +113,11 @@ export async function handleProxy(req: Request, slug: string, path?: string) {
     }
   }
 
+  // 4b. Only endpoints the adapter can account for. An unknown path would
+  //     spend key.one's credentials on a call nobody is billed for.
+  const billing = adapter.endpoint ? adapter.endpoint(path ?? null, body) : (path ? null : 'metered')
+  if (!billing) return unsupported(catalogApi.name, 'POST', path)
+
   // Model shortcuts: "cheapest" | "balanced" | "best" become a concrete id
   let resolvedFrom: string | null = null
   if (isModelShortcut(body.model)) {
@@ -118,8 +132,18 @@ export async function handleProxy(req: Request, slug: string, path?: string) {
 
   const supabase = createServiceClient()
 
-  // 5. Spend controls, before the wallet so a blocked project never touches the balance
-  const decision = await evaluatePolicy(supabase, caller, catalogApi, slug, body, model, ctx.path)
+  // 5. The most this call could cost, known before it is sent. A per-token
+  //    call with no price to estimate from is not sent at all.
+  const estimate = billing === 'free' ? 0 : await estimateCallCost(catalogApi, body, model, ctx.path)
+  if (estimate === null && catalogApi.pricing_model === 'per_token') {
+    return Response.json(
+      { error: 'pricing_unavailable', message: `No price is available for ${catalogApi.name} right now, so the call was not sent. Try again in a minute.` },
+      { status: 503 }
+    )
+  }
+
+  // 5b. Spend controls, before the wallet so a blocked project never touches the balance
+  const decision = await evaluatePolicy(supabase, caller, slug, body, model, estimate)
   if (!decision.allowed) {
     await supabase.from('api_calls').insert({
       ...callBase(caller, catalogApi, catalogApi.base_url, body, model),
@@ -131,14 +155,13 @@ export async function handleProxy(req: Request, slug: string, path?: string) {
     return blockedResponse(decision, baseHeaders)
   }
 
-  // 6. Agency wallet
+  // 6. Agency wallet: it has to cover what the call could cost, not just be non-empty
   const balance = await getWalletBalance(caller.agency_id)
   const isAsync = catalogApi.execution_mode === 'async'
-  if (catalogApi.pricing_model === 'per_token' || isAsync) {
-    if (balance < MIN_BUFFER_USD) return insufficientBalance(balance)
-  } else if (balance < (catalogApi.price_per_call ?? 0)) {
-    return insufficientBalance(balance)
-  }
+  const needed = catalogApi.pricing_model === 'per_token' || isAsync
+    ? Math.max(MIN_BUFFER_USD, estimate ?? 0)
+    : (catalogApi.price_per_call ?? 0)
+  if (balance < needed) return insufficientBalance(balance, needed > MIN_BUFFER_USD ? needed : undefined)
 
   const postCtx = {
     origin: appUrl(new URL(req.url).origin),
@@ -215,16 +238,18 @@ export async function handleProxy(req: Request, slug: string, path?: string) {
       .single()
     const callId = pending?.id ?? null
 
-    const stream = teeSse(upstream.body, async events => {
+    const stream = teeSse(upstream.body, async (events, cut) => {
       const usage = adapter.usageFromSse?.(events, ctx) ?? adapter.usageFromRequest?.(ctx) ?? null
-      const priced = await priceCall(catalogApi, model ?? modelFromEvents(events), usage, null)
+      const priced = await priceCall(catalogApi, billing, ctx, model ?? modelFromEvents(events), usage, {
+        streamed: cut ? streamedText(events) : undefined,
+      })
       await settleCall(supabase, caller, catalogApi, callId, {
         ...priced,
         duration_ms: Date.now() - start,
         response_status: upstream.status,
         balance,
       }, postCtx)
-    })
+    }, start + STREAM_BUDGET_MS)
 
     const streamHeaders: Record<string, string> = {
       ...baseHeaders,
@@ -249,7 +274,7 @@ export async function handleProxy(req: Request, slug: string, path?: string) {
     const usage = catalogApi.pricing_model === 'per_token'
       ? ((isJson ? adapter.usageFromJson?.(data, ctx) : null) ?? adapter.usageFromRequest?.(ctx) ?? null)
       : null
-    priced = await priceCall(catalogApi, model, usage, isJson ? data : null, adapter.resultCount)
+    priced = await priceCall(catalogApi, billing, ctx, model, usage, { data: isJson ? data : null, resultCount: adapter.resultCount })
   }
 
   const { data: row } = await supabase
@@ -277,7 +302,7 @@ export async function handleProxy(req: Request, slug: string, path?: string) {
     ...baseHeaders,
     ...budgetHeaders(priced.cost),
     'X-Cost-USD': priced.cost.toFixed(6),
-    'X-Balance-Remaining': (balance - priced.cost).toFixed(6),
+    'X-Balance-Remaining': Math.max(0, balance - priced.cost).toFixed(6),
     'X-Pricing-Status': priced.status,
   }
   if (callId) respHeaders['X-Call-ID'] = callId
@@ -292,6 +317,16 @@ export async function handleProxy(req: Request, slug: string, path?: string) {
 // ------------------------------------------------------------
 // helpers
 // ------------------------------------------------------------
+
+function unsupported(provider: string, method: string, path: string | undefined) {
+  return Response.json(
+    {
+      error: 'unsupported_endpoint',
+      message: `${method} /${path ?? ''} on ${provider} is not available through key.one. Supported endpoints: ${appUrl('https://getkeyone.com')}/docs`,
+    },
+    { status: 404 }
+  )
+}
 
 // Multipart form fields arrive as strings; "true", "1.5" mean what they look like
 function coerceField(v: string): unknown {
@@ -325,23 +360,53 @@ function callBase(caller: ResolvedKey, api: CatalogApi, endpoint: string, body: 
   }
 }
 
+// Does a usage record bill for anything at all? An all-zero one means the
+// response came in a shape the adapter could not read.
+function hasUsage(u: TokenUsage): boolean {
+  if (u.reported_cost_usd !== undefined || u.tool_calls) return true
+  return [
+    u.input_tokens, u.output_tokens, u.cached_input_tokens, u.cache_write_tokens, u.cache_write_1h_tokens,
+    u.image_input_tokens, u.image_output_tokens, u.audio_input_tokens, u.audio_output_tokens,
+    u.characters, u.minutes, u.units,
+  ].some(v => (v ?? 0) > 0)
+}
+
 // Price a successful call. Unknown models fall back to the provider's '*'
-// row so nothing is ever free by accident; the status says how it was priced.
+// row, and a response without usage is billed at the pre-call estimate, so
+// nothing is ever free by accident; the status says how it was priced.
+// `streamed` is the text produced so far when a stream was cut short.
 async function priceCall(
   api: CatalogApi,
+  billing: EndpointBilling,
+  ctx: UsageContext,
   model: string | null,
   usage: TokenUsage | null,
-  data: Record<string, unknown> | null,
-  resultCount?: (json: unknown) => number
+  opts: { data?: Record<string, unknown> | null; resultCount?: (json: unknown) => number; streamed?: string } = {}
 ): Promise<Priced> {
+  const { data = null, resultCount, streamed } = opts
   if (api.pricing_model === 'per_token') {
     const id = model ?? (typeof data?.model === 'string' ? data.model : null)
-    if (!usage) return { cost: 0, providerCost: 0, usage: null, status: 'unknown', model: id }
+    if (billing === 'free') return { cost: 0, providerCost: 0, usage, status: 'free', model: id }
     const price = await resolveModelPrice(api.provider, id ?? '')
-    if (!price) return { cost: 0, providerCost: 0, usage, status: 'unknown', model: id }
+    if (!price) {
+      // The call was only sent because a price existed; the table went away since
+      console.error(`[billing] no price for ${api.provider} ${id}: call left unbilled`)
+      return { cost: 0, providerCost: 0, usage, status: 'unknown', model: id }
+    }
+    let billed = usage
+    let status: Priced['status'] = price.status
+    // A stream cut short has reported its output count too early, if at all
+    if (billed && streamed !== undefined && billed.reported_cost_usd === undefined) {
+      billed = { ...billed, output_tokens: Math.max(billed.output_tokens, roughTokens(streamed)) }
+    }
+    if (!billed || !hasUsage(billed)) {
+      billed = estimateUsage(price, ctx.body, ctx.path, streamed === undefined ? undefined : roughTokens(streamed))
+      status = 'estimated'
+      console.error(`[billing] no usage from ${api.provider} /${endpointOf(ctx.path)} (${id}): billed the estimate`)
+    }
     // A provider-reported cost already includes its tool fees
-    const pc = providerCost(price, usage) + (usage.reported_cost_usd === undefined ? await toolFees(api.provider, usage.tool_calls) : 0)
-    return { cost: userPrice(pc), providerCost: pc, usage, status: price.status, model: id }
+    const pc = providerCost(price, billed) + (billed.reported_cost_usd === undefined ? await toolFees(api.provider, billed.tool_calls) : 0)
+    return { cost: userPrice(pc), providerCost: pc, usage: billed, status, model: id }
   }
   if (api.pricing_model === 'per_result') {
     const n = data && resultCount ? resultCount(data) : 0
@@ -391,13 +456,8 @@ async function settleCall(
     }
 
     if (s.cost > 0) {
-      await supabase.rpc('deduct_wallet', {
-        p_agency_id: caller.agency_id,
-        p_amount: s.cost,
-        p_description: `${api.slug} · ${caller.client.name} / ${caller.project.name}`,
-        p_api_call_id: callId,
-      })
-      const newBalance = s.balance - s.cost
+      const charged = await chargeWallet(supabase, caller.agency_id, s.cost, `${api.slug} · ${caller.client.name} / ${caller.project.name}`, callId)
+      const newBalance = s.balance - charged
       if (newBalance < 5 && after) {
         await raiseAlert(supabase, {
           agency_id: caller.agency_id,
@@ -421,7 +481,8 @@ function sanitizePayload(body: Record<string, unknown>): Record<string, unknown>
   const sanitized = { ...body }
   const sensitiveKeys = ['password', 'token', 'secret', 'key', 'authorization']
   for (const key of Object.keys(sanitized)) {
-    if (sensitiveKeys.some(s => key.toLowerCase().includes(s))) sanitized[key] = '[redacted]'
+    // Numbers are limits (max_tokens), never credentials
+    if (typeof sanitized[key] !== 'number' && sensitiveKeys.some(s => key.toLowerCase().includes(s))) sanitized[key] = '[redacted]'
   }
   // Base64 image payloads have no business in the log
   for (const key of ['image', 'mask', 'b64_json', 'file']) {

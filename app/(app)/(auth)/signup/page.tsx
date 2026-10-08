@@ -88,7 +88,7 @@ function SignupForm() {
         <Link href="/" className="logo text-2xl">
           key<span className="dot">.</span>one
         </Link>
-        <p className="mt-2 text-sm text-ink-muted">Create your agency account. Start with $3 of credit.</p>
+        <p className="mt-2 text-sm text-ink-muted">Create your agency account.</p>
       </div>
 
       <div className="card p-6">
@@ -144,7 +144,7 @@ function SignupForm() {
       </p>
 
       <p className="mt-6 text-center text-xs text-ink-subtle">
-        $3 free credit to start. Then pay only for what you use. No subscription, ever.
+        Pay only for what you use, from a wallet you top up. No subscription, ever.
       </p>
     </div>
   )

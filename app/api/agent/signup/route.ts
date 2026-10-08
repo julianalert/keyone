@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
       subject: `${agent ?? 'Your agent'} wants to connect key.one`,
       html: `<div style="font-family:sans-serif;max-width:520px;margin:0 auto;color:#1a1a18;line-height:1.5">
         <h2 style="font-size:20px;font-weight:500">${escape(agent ?? 'Your coding agent')} asked to set up key.one for you</h2>
-        <p style="color:#5F5E5A">One click creates your key.one account (or signs you in), with a <strong>Sandbox</strong> project capped at $${'10'} a month and $3 of free credit. Your agent picks up the project key by itself; you never paste it anywhere.</p>
+        <p style="color:#5F5E5A">One click creates your key.one account (or signs you in), with a <strong>Sandbox</strong> project capped at $${'10'} a month. Your agent picks up the project key by itself; you never paste it anywhere.</p>
         <a href="${approveUrl}" style="display:inline-block;margin-top:8px;background:#1a1a18;color:#F9F7F3;padding:10px 18px;border-radius:6px;text-decoration:none;font-size:14px">Approve and open key.one</a>
         <p style="margin-top:20px;font-size:12px;color:#888780">This link expires in 30 minutes. If you didn't ask an agent to set up key.one, ignore this email and nothing happens.</p>
       </div>`,

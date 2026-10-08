@@ -71,7 +71,8 @@ one click and you collect the key yourself:
    \`\`\`
    The response has \`poll_url\` and \`claim_token\`. Tell the user to click the approval link in
    the email. It creates their account (or signs them in) with a **Sandbox / Default** project
-   capped at $10 a month and $3 of free credit.
+   capped at $10 a month. The wallet starts empty: until the user adds funds in the dashboard
+   (from $5), calls answer 402.
 2. Poll \`GET poll_url\` every 5 seconds, up to 15 minutes. \`"status": "pending"\` means not yet
    clicked; \`"ready"\` comes with \`env\` (the four variables above, key included) exactly once.
    Write them straight to the env file. Never print the key or put it in the chat.

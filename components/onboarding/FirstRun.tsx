@@ -60,7 +60,7 @@ export function FirstRun({ mode, agencyName, project: initial }: { mode: Mode; a
         )}
       </div>
 
-      <p className="mt-6 text-xs text-ink-subtle text-center">Your wallet starts with $3 of credit, enough for thousands of small calls.</p>
+      <p className="mt-6 text-xs text-ink-subtle text-center">Your wallet starts empty. <Link href="/dashboard/wallet" className="underline underline-offset-2 hover:text-ink">Add funds</Link> (from $5) before your first call.</p>
     </div>
   )
 }

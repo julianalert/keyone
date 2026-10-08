@@ -61,8 +61,9 @@ export async function sendWelcomeIfNeeded(supabase: SupabaseClient, agencyId: st
       subject: `Welcome to key.one, ${agency.name}`,
       html: `<div style="font-family:sans-serif;max-width:520px;margin:0 auto;color:#1a1a18;line-height:1.5">
         <h2 style="font-size:20px;font-weight:500">One key per client project. Every model. Spend under control.</h2>
-        <p style="color:#5F5E5A">Your wallet starts with <strong>$3</strong> of credit. Three steps to your first call:</p>
+        <p style="color:#5F5E5A">Four steps to your first call:</p>
         <ol style="color:#5F5E5A;padding-left:20px">
+          <li>Add funds to your wallet, from $5. Every call is paid from it.</li>
           <li>Add a client and a project. The project gets its key.</li>
           <li>Point the OpenAI or Anthropic SDK at key.one with that key.</li>
           <li>Set a budget. Calls stop at the limit, and you can see spend per client.</li>

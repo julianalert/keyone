@@ -28,7 +28,6 @@ const included = [
   'Client reports and CSV exports with your own markup',
   'Controller agent, MCP server and skill file',
   'Your team, with owner, admin and member roles',
-  '$3 of free credit to start',
 ]
 
 const examples = [

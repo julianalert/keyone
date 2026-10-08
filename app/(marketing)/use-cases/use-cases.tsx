@@ -416,7 +416,7 @@ export const useCases: UseCaseContent[] = [
         {
           icon: <BanknotesIcon />,
           title: 'Prepaid wallet',
-          body: 'Top up from $5. The wallet is the hard ceiling for everything; budgets are the ceiling per client. $3 of free credit to start.',
+          body: 'Top up from $5. The wallet is the hard ceiling for everything; budgets are the ceiling per client.',
         },
         {
           icon: <KeyIcon />,
@@ -431,7 +431,7 @@ export const useCases: UseCaseContent[] = [
       ],
     },
     steps: [
-      { title: 'Sign up and top up', body: 'Create your account with $3 of credit, then top up from $5 when you are ready to run.' },
+      { title: 'Sign up and top up', body: 'Create your account, then top up from $5 when you are ready to run.' },
       { title: 'One client, one project, one key', body: 'Dr. Patel Dental → Reminder texts. Set a budget that matches what you quoted.' },
       {
         title: 'Replace the provider key',

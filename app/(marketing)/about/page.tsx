@@ -105,7 +105,7 @@ const differentiators = [
   },
   {
     title: 'No subscription or contract',
-    body: 'You pay for usage from a prepaid wallet, starting with a $3 credit at signup and top-ups from $5. There is no monthly seat fee and no annual commitment.',
+    body: 'You pay for usage from a prepaid wallet, with top-ups from $5. There is no monthly seat fee and no annual commitment.',
   },
 ]
 
@@ -118,7 +118,7 @@ const segments = [
 ]
 
 const onboarding = [
-  { title: 'Sign up', body: 'Create your agency account and get a $3 credit to test with. No card needed to start.' },
+  { title: 'Sign up', body: 'Create your agency account. No card needed to sign up; top up from $5 when you are ready to make calls.' },
   {
     title: 'Add a client and a project',
     body: 'Mirror how you already work, set a monthly budget if you want one, and copy the project key.',
@@ -143,7 +143,7 @@ function keyFacts(tools: string[]) {
     },
     {
       label: 'Pricing',
-      value: 'Pay as you go from a prepaid wallet, per token, per call or per result depending on the tool; $3 credit at signup; top-ups from $5',
+      value: 'Pay as you go from a prepaid wallet, per token, per call or per result depending on the tool; top-ups from $5',
     },
     { label: 'Contract terms', value: 'No subscription and no contract' },
     {

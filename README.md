@@ -44,9 +44,11 @@ Run the migrations in order in your Supabase project's SQL Editor:
 014_fix_member_policy_recursion → security-definer helper for the team policy
 015_reconciliation            → provider cost reconciliation table + our-side aggregate
 016_catalog_refresh           → multi-unit prices (images, audio, characters, minutes, requests), Perplexity Agent API, hidden unconnected tools
+017_agent_onboarding          → agent-started signup, sandbox project, one-time key pickup
+018_no_welcome_credit         → new wallets start empty
 ```
 
-Migration 003 drops the agent-scoped tables and recreates them. On signup a trigger creates the user's agency, membership, and wallet, credited with $3 (migration 010).
+Migration 003 drops the agent-scoped tables and recreates them. On signup a trigger creates the user's agency, membership, and wallet. The wallet starts empty: migration 018 removed the $3 welcome credit of migration 010.
 
 ### 3. Stripe
 

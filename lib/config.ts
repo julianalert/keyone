@@ -21,8 +21,8 @@ export function fromEmail(kind: 'alerts' | 'receipts' = 'alerts'): string {
 // Kill switch for the public API: the proxy, the MCP server and agent-started
 // signup. While true, every one of those calls answers 503 before any key
 // lookup, provider call or billing. The dashboard, Stripe webhooks and cron
-// jobs keep working. To reactivate, set it back to false and deploy.
-const API_PAUSED = true
+// jobs keep working. Set it to true and deploy to pause, false to reopen.
+const API_PAUSED = false
 
 export function apiPaused(): Response | null {
   if (!API_PAUSED) return null

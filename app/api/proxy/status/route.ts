@@ -1,6 +1,7 @@
 import { resolveProjectKey, extractBearer, getWalletBalance, unauthorized } from '@/lib/proxy/auth'
 import { getSpendSnapshot, nextMonthStart } from '@/lib/proxy/policy'
 import { createServiceClient } from '@/lib/supabase/server'
+import { apiPaused } from '@/lib/config'
 
 export const runtime = 'nodejs'
 
@@ -8,6 +9,8 @@ export const runtime = 'nodejs'
 // with nothing but its project key. Lets it check before spending and
 // explain a block instead of retrying blindly.
 export async function GET(req: Request) {
+  const paused = apiPaused()
+  if (paused) return paused
   const apiKey = extractBearer(req)
   if (!apiKey) return unauthorized('Missing Authorization: Bearer <project key>')
 

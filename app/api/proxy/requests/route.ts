@@ -1,5 +1,5 @@
 import { resolveProjectKey, extractBearer, unauthorized } from '@/lib/proxy/auth'
-import { appUrl } from '@/lib/config'
+import { appUrl, apiPaused } from '@/lib/config'
 import { createServiceClient } from '@/lib/supabase/server'
 import { createBudgetRequest } from '@/lib/requests'
 
@@ -7,6 +7,8 @@ export const runtime = 'nodejs'
 
 // POST /api/proxy/requests — an agent asks for more budget with its project key
 export async function POST(req: Request) {
+  const paused = apiPaused()
+  if (paused) return paused
   const apiKey = extractBearer(req)
   if (!apiKey) return unauthorized('Missing Authorization: Bearer <project key>')
   const caller = await resolveProjectKey(apiKey)
@@ -39,6 +41,8 @@ export async function POST(req: Request) {
 
 // GET /api/proxy/requests — this project's requests, newest first
 export async function GET(req: Request) {
+  const paused = apiPaused()
+  if (paused) return paused
   const apiKey = extractBearer(req)
   if (!apiKey) return unauthorized('Missing Authorization: Bearer <project key>')
   const caller = await resolveProjectKey(apiKey)

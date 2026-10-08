@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSessionContext } from '@/lib/agency'
+import { apiPaused } from '@/lib/config'
 
 // Never prerender: this reads live data at request time
 export const dynamic = 'force-dynamic'
@@ -171,6 +172,8 @@ const TOOLS = [
 ]
 
 export async function POST(req: NextRequest) {
+  const paused = apiPaused()
+  if (paused) return paused
   const ctx = await getSessionContext(req)
   if (!ctx || ctx.via !== 'agency_key') {
     return NextResponse.json(

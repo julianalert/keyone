@@ -7,7 +7,7 @@ import {
   notFound,
   insufficientBalance,
 } from '@/lib/proxy/auth'
-import { appUrl } from '@/lib/config'
+import { appUrl, apiPaused } from '@/lib/config'
 import { checkRateLimit } from '@/lib/proxy/rate-limit'
 import { MIN_BUFFER_USD, estimateCallCost, estimateUsage, roughTokens } from '@/lib/billing/calculate-cost'
 import { resolveModelPrice, providerCost, toolFees, userPrice, type TokenUsage, type PricingStatus } from '@/lib/billing/pricing'
@@ -40,6 +40,8 @@ const STREAM_BUDGET_MS = 285_000
 
 // Shared by /api/proxy/[slug] and the SDK-style /api/proxy/[slug]/[...path]
 export async function handleProxy(req: Request, slug: string, path?: string) {
+  const paused = apiPaused()
+  if (paused) return paused
   const start = Date.now()
 
   // 1. The project key is the only credential

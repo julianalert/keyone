@@ -17,3 +17,17 @@ export function fromEmail(kind: 'alerts' | 'receipts' = 'alerts'): string {
   })()
   return `key.one <${kind}@${host}>`
 }
+
+// Kill switch for the public API: the proxy, the MCP server and agent-started
+// signup. While true, every one of those calls answers 503 before any key
+// lookup, provider call or billing. The dashboard, Stripe webhooks and cron
+// jobs keep working. To reactivate, set it back to false and deploy.
+const API_PAUSED = true
+
+export function apiPaused(): Response | null {
+  if (!API_PAUSED) return null
+  return Response.json(
+    { error: 'api_paused', message: 'The key.one API is temporarily paused. No calls are accepted or billed right now.' },
+    { status: 503 }
+  )
+}

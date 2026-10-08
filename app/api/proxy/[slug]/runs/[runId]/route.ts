@@ -8,7 +8,7 @@ import {
 import { createServiceClient } from '@/lib/supabase/server'
 import { chargeWallet } from '@/lib/billing/wallet'
 import { raiseAlert } from '@/lib/notify'
-import { appUrl } from '@/lib/config'
+import { appUrl, apiPaused } from '@/lib/config'
 
 export const runtime = 'nodejs'
 // Long generations (Opus, Fable, big prompts) need the full function budget on Vercel
@@ -19,6 +19,8 @@ export async function GET(
   req: Request,
   { params }: { params: { slug: string; runId: string } }
 ) {
+  const paused = apiPaused()
+  if (paused) return paused
   const { slug, runId } = params
 
   // 1. Auth: any active key of the project that started the run may poll it

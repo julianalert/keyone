@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createHash } from 'node:crypto'
 import { createServiceClient } from '@/lib/supabase/server'
-import { appUrl } from '@/lib/config'
+import { appUrl, apiPaused } from '@/lib/config'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -9,6 +9,8 @@ export const dynamic = 'force-dynamic'
 // GET /api/agent/signup/:token — the agent polls until the human has clicked.
 // The project key is returned exactly once, then wiped from the claim.
 export async function GET(req: NextRequest, { params }: { params: { token: string } }) {
+  const paused = apiPaused()
+  if (paused) return paused
   const service = createServiceClient()
   const tokenHash = createHash('sha256').update(params.token).digest('hex')
   const { data: claim } = await service

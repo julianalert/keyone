@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createHash, randomBytes } from 'node:crypto'
 import { Resend } from 'resend'
 import { createServiceClient } from '@/lib/supabase/server'
-import { appUrl, fromEmail } from '@/lib/config'
+import { appUrl, fromEmail, apiPaused } from '@/lib/config'
 
 export const runtime = 'nodejs'
 
@@ -15,6 +15,8 @@ export const runtime = 'nodejs'
 // The human consents with the click; the agent never sees a password and
 // the key never goes through a chat.
 export async function POST(req: NextRequest) {
+  const paused = apiPaused()
+  if (paused) return paused
   const body = await req.json().catch(() => ({})) as { email?: unknown; agent?: unknown }
   const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : ''
   const agent = typeof body.agent === 'string' ? body.agent.trim().slice(0, 60) : null

@@ -15,6 +15,7 @@ export function GuideArticle({
   headline,
   subheadline,
   meta,
+  cover,
   toc,
   lead,
   html,
@@ -26,6 +27,8 @@ export function GuideArticle({
   headline: ReactNode
   subheadline?: ReactNode
   meta?: ReactNode
+  // Shown under the header, wider than the reading column (e.g. a post's thumbnail)
+  cover?: ReactNode
   toc: TocItem[]
   // Shown above the article body, in the reading column (e.g. a highlighted callout)
   lead?: ReactNode
@@ -58,6 +61,8 @@ export function GuideArticle({
             )}
           </div>
         </header>
+
+        {cover && <div className="mx-auto mt-10 max-w-4xl sm:mt-14">{cover}</div>}
 
         <div className={clsx(grid, 'mt-10 sm:mt-14')}>
           {toc.length > 0 && (

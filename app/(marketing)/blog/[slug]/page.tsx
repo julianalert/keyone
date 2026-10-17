@@ -43,6 +43,7 @@ function structuredData(post: Guide) {
       '@type': 'BlogPosting',
       headline: post.title,
       description: post.description,
+      ...(post.image && { image: `${SITE_URL}${post.image}` }),
       datePublished: post.published,
       dateModified: post.updated ?? post.published,
       author: {
@@ -105,6 +106,19 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
               </span>
             </div>
           </>
+        }
+        cover={
+          post.image && (
+            <Image
+              src={post.image}
+              alt=""
+              width={1200}
+              height={628}
+              priority
+              sizes="(min-width: 1024px) 896px, 100vw"
+              className="aspect-[1.91] w-full rounded-xl object-cover ring-1 ring-olive-950/5 dark:ring-white/10"
+            />
+          )
         }
         toc={post.toc}
         html={post.html}

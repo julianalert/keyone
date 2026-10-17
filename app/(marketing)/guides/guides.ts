@@ -14,10 +14,14 @@ import { Marked, type Tokens } from 'marked'
  *   icon: chart | banknotes | key | document  (optional, shown in the navbar menu)
  *   author: Carine
  *   authorImage: /carine.jpeg  (optional, a file in public/)
+ *   image: /blog/cover.jpg     (optional thumbnail, a file in public/, 1.91:1 like a share card)
  *   ---
  *
  * The body starts after the frontmatter (no H1: the title comes from the frontmatter).
  * Every `##` heading becomes an entry in the "On this page" menu.
+ *
+ * A line `<figure data-figure="name"></figure>` is replaced with that figure's
+ * markup from the collection's figures (e.g. blog/figures.ts).
  */
 
 const CONTENT_DIR = path.join(process.cwd(), 'content')
@@ -34,6 +38,7 @@ export interface GuideMeta {
   author: string
   authorRole?: string
   authorImage?: string
+  image?: string
   readingMinutes: number
   // Every frontmatter field as written, for collections with extra fields (e.g. customer stories)
   fields: Record<string, string>
@@ -81,7 +86,10 @@ function stripInline(text: string) {
   return text.replace(/\*\*|__|`/g, '').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
 }
 
-export function renderMarkdown(body: string) {
+// HTML for each figure a collection's Markdown can embed, by name
+export type Figures = Record<string, string>
+
+export function renderMarkdown(body: string, figures: Figures = {}) {
   const toc: TocEntry[] = []
   const usedIds = new Set<string>()
 
@@ -119,18 +127,23 @@ export function renderMarkdown(body: string) {
     .replaceAll('</table>', '</table></div>')
     // Task lists (`- [ ] …`) render as checklists
     .replace(/<ul>\n(?=<li><input)/g, '<ul class="checklist">\n')
+    // Embedded figures; an unknown name fails the build rather than shipping an empty box
+    .replace(/<figure data-figure="([\w-]+)"><\/figure>/g, (_, name: string) => {
+      if (!(name in figures)) throw new Error(`Unknown figure "${name}"`)
+      return figures[name]
+    })
 
   return { html, toc }
 }
 
 // A folder of Markdown files under content/ (guides, blog posts): slugs, one entry, or all of them.
-export function createCollection(folder: string) {
+export function createCollection(folder: string, { figures }: { figures?: Figures } = {}) {
   const dir = path.join(CONTENT_DIR, folder)
 
   function read(slug: string): Guide {
     const file = `${slug}.md`
     const { data, body } = parseFrontmatter(fs.readFileSync(path.join(dir, file), 'utf8'), `${folder}/${file}`)
-    const { html, toc } = renderMarkdown(body)
+    const { html, toc } = renderMarkdown(body, figures)
     const words = body.split(/\s+/).filter(Boolean).length
 
     return {
@@ -144,6 +157,7 @@ export function createCollection(folder: string) {
       author: data.author || 'Keyone',
       authorRole: data.authorRole,
       authorImage: data.authorImage,
+      image: data.image,
       readingMinutes: Math.max(1, Math.round(words / WORDS_PER_MINUTE)),
       fields: data,
       html,

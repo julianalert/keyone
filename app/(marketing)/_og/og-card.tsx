@@ -132,3 +132,72 @@ export async function ogCard({
     { ...OG_SIZE, fonts: await fonts() },
   )
 }
+
+// Share card for a post with a thumbnail: the thumbnail fills the card, with the
+// headline set in white on its left. Thumbnails leave their left side empty for it.
+export async function ogCoverCard({ image, eyebrow, title, footer }: { image: string; eyebrow: string; title: string; footer?: string }) {
+  const file = await readFile(path.join(process.cwd(), 'public', image))
+  const mime = /\.png$/i.test(image) ? 'image/png' : 'image/jpeg'
+  const long = title.length > 48
+  return new ImageResponse(
+    (
+      <div
+        style={{
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          padding: '64px 72px',
+          background: '#141311',
+          color: '#fff',
+          fontFamily: 'Inter',
+          position: 'relative',
+        }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text */}
+        <img
+          src={`data:${mime};base64,${file.toString('base64')}`}
+          width={OG_SIZE.width}
+          height={OG_SIZE.height}
+          style={{ position: 'absolute', top: 0, left: 0, objectFit: 'cover' }}
+        />
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
+          <div style={{ fontFamily: 'Instrument Serif', fontSize: 52, letterSpacing: -1 }}>keyone</div>
+          <div
+            style={{
+              display: 'flex',
+              fontSize: 20,
+              fontWeight: 600,
+              color: colors.lime,
+              letterSpacing: 3,
+              textTransform: 'uppercase',
+              marginTop: 8,
+            }}
+          >
+            {eyebrow}
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: 'flex',
+            fontFamily: 'Instrument Serif',
+            fontSize: long ? 56 : 68,
+            lineHeight: 1.05,
+            letterSpacing: -1,
+            maxWidth: 380,
+          }}
+        >
+          {title}
+        </div>
+
+        <div style={{ display: 'flex', fontSize: 22, color: 'rgba(255, 255, 255, 0.6)' }}>
+          {footer ?? 'getkeyone.com'}
+        </div>
+      </div>
+    ),
+    { ...OG_SIZE, fonts: await fonts() },
+  )
+}

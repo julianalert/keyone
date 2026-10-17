@@ -264,13 +264,13 @@ export default async function HomePage() {
             project with a budget, and invoicing is an export.
           </p>
         }
-        img={<Image src="/clement.jpg" alt="Clement Bernard, founder of Visionbds" width={96} height={96} />}
+        img={<Image src="/clement.jpg" alt="Clement Bernard, founder of VisionBTP.com" width={96} height={96} />}
         name="Clement Bernard"
         byline={
           <>
             Founder,{' '}
-            <a href="https://visionbds.com" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">
-              Visionbds
+            <a href="https://www.visionbtp.com" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">
+              VisionBTP.com
             </a>{' '}
             · AI Automation Agency
           </>

@@ -10,6 +10,10 @@ const nextConfig = {
       '/setup.js': ['./cli/keyone.js'],
     },
   },
+  // The VisionBTP customer story used to live at its old agency name
+  async redirects() {
+    return [{ source: '/customers/vision-bds', destination: '/customers/visionbtp', permanent: true }]
+  },
 }
 
 export default nextConfig

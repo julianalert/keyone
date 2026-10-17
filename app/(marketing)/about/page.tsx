@@ -159,7 +159,7 @@ function keyFacts(tools: string[]) {
         </>
       ),
     },
-    { label: 'Notable clients', value: 'Visionbds (AI automation agency)' },
+    { label: 'Notable clients', value: 'VisionBTP (AI automation agency)' },
     { label: 'Competitors', value: 'Portkey, Helicone, LiteLLM, Monid' },
     {
       label: 'Social',

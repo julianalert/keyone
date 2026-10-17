@@ -26,7 +26,7 @@ keyone is an AI spend management platform for agencies and freelancers who run A
 - [About](${SITE_URL}/about): company, team, differentiators and key facts
 - [Use cases](${SITE_URL}/use-cases): who keyone is for, one page per kind of business
 - [Guides](${SITE_URL}/guides): practical guides for agencies and freelancers running AI for clients
-- [Book a demo](${SITE_URL}/demo): a 30-minute call with the founder
+- [Book a demo](${SITE_URL}/demo): a 15-minute call with the founder
 
 ## Product
 

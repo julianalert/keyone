@@ -35,7 +35,7 @@ export default function UseCasesIndexPage() {
           <p className="text-sm/7 text-olive-500">
             Something else?{' '}
             <a href="/demo" className="font-medium text-olive-950 underline underline-offset-4 dark:text-white">
-              Book a 30-minute call
+              Book a 15-minute call
             </a>{' '}
             and tell us how you run AI for clients.
           </p>

@@ -8,11 +8,11 @@ import { pageMetadata } from '../seo'
 export const metadata = pageMetadata({
   title: 'Book a demo',
   description:
-    'Book a free 30-minute call with keyone’s founder. We talk about your agency and your clients, and you leave with a plan for tracking and controlling their AI spend.',
+    'Book a free 15-minute call with keyone’s founder. We talk about your agency and your clients, and you leave with a plan for tracking and controlling their AI spend.',
   path: '/demo',
 })
 
-const CALENDLY_URL = 'https://calendly.com/juliend-visionbds/30min'
+const CALENDLY_URL = 'https://calendly.com/juliend-visionbds/audit'
 
 // Inline Calendly embed. Plain iframe, so no third-party script runs on the page.
 const embedUrl = `${CALENDLY_URL}?${new URLSearchParams({
@@ -57,7 +57,7 @@ export default function DemoPage() {
               <span className="text-olive-950 dark:text-white">Book a demo</span>
             </nav>
 
-            <AnnouncementBadge href="#calendar" text="Free call · 30 minutes" cta="Pick a time" className="self-start" />
+            <AnnouncementBadge href="#calendar" text="Free call · 15 minutes" cta="Pick a time" className="self-start" />
 
             <Heading className="text-5xl/12 sm:text-6xl/16">
               Book a <span className="text-brand-green italic dark:text-brand-lime">demo.</span>
@@ -108,7 +108,7 @@ export default function DemoPage() {
 
           <div id="calendar" className="flex scroll-mt-24 flex-col gap-3">
             <div className="overflow-hidden rounded-xl bg-white ring-1 ring-olive-950/10 dark:ring-white/10">
-              <iframe src={embedUrl} title="Book a 30-minute call with keyone" className="h-[720px] w-full" />
+              <iframe src={embedUrl} title="Book a 15-minute call with keyone" className="h-[720px] w-full" />
             </div>
             <p className="text-center text-sm/7 text-olive-500">
               Rather try it on your own?{' '}
